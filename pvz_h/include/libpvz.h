@@ -754,6 +754,7 @@ struct PAO_MESSAGE
 
 //炮操作类：使用炮操作类可以建立多个炮列表，使得复杂的操作能够更好的实现
 //public 成员函数介绍：
+//autoGetPaoList：自动识别炮列表，使用此函数将会使对象内的炮列表重置为全场所有炮的位置
 //resetPaoList：手动重置炮列表，与UpdatePaolist用法相同
 //skipPao：跳过一定数量的炮，用法与SkipPao相同
 //rawPao：用户自定义位置发射炮，用法与RawPao相同
@@ -859,7 +860,11 @@ public:
 
 	//设置即将发射的下一门炮
 	//此函数只有在限制炮序的时候才可调用
-	void setNextPao(int next_pao) { nowpao = next_pao; }
+	void setNextPao(int next_pao);
+
+	//设置即将发射的下一门炮
+	//此函数只有在限制炮序的时候才可调用
+	void setNextPao(int row, int col);
 
 	//重置炮列表
 	void resetPaoList(const std::vector<GRID> lst);
