@@ -11,9 +11,13 @@ void KeyOperate1();
 void KeyOperate2();
 
 ////////////////////// main
+
 int main()
 {
-    
+    //运行时需要将其中一个注释掉
+    KeyOperate1();
+    KeyOperate2();
+
     return 0;
 }
 
