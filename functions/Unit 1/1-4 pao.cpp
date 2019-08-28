@@ -3,10 +3,6 @@
 
 // UpdatePaoList : 更新炮列表
 // Pao : 发炮函数
-// RawPao : 指定位置发炮
-// RoofPao : 屋顶修正时间发炮
-// RecoverPao : 等待炮恢复立即发炮
-// FixPao : 铲种炮
 // SkipPao : 跳过一定数量的炮
 // ...
 
