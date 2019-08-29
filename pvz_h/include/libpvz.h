@@ -24,6 +24,7 @@
 #include <list>
 #include <initializer_list>
 #include <algorithm>
+#include <functional>
 
 //用于储存位置信息
 struct GRID
@@ -649,6 +650,8 @@ inline bool KeyDown(int key)
 	return GetAsyncKeyState(key) & 0x8001 == 0x8001;
 }
 
+void KeyConnect(int key, std::function<void()> const &_operate);
+
 } // namespace pvz_simulate
 
 //包含用卡操作函数
@@ -1130,8 +1133,8 @@ public:
 
 	//重置保护植物列数
 	//使用示例：
-	//reset_potected_plant_list()-----默认将要保护的植物的位置重置为每行的最靠前位置
-	//reset_potected_plant_list({{2,3},{3,4}})------将要保护的植物的位置重置为{2,3},{3,4}
+	//resetProtectedPlantList()-----默认将要保护的植物的位置重置为每行的最靠前位置
+	//resetProtectedPlantList({{2,3},{3,4}})------将要保护的植物的位置重置为{2,3},{3,4}
 	//注意：此函数必须配合要垫的行数，如果出现重置的行数不在要垫的范围内，就会报错
 	void resetProtectedPlantList(std::initializer_list<GRID> lst = {});
 

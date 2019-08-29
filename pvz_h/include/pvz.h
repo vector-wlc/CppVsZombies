@@ -27,7 +27,8 @@ using pvz_pao::PaoOperator;				//炮操作类
 using pvz_script::CancelAutoExit;		//取消自动退出机制
 using pvz_script::OpenExamine;			//开启检查
 using pvz_script::OpenHighPrecision;	//开启高精度
-using pvz_simulate::KeyDown;			//键盘指定操作
+using pvz_simulate::KeyDown;			//检测键盘是否按下
+using pvz_simulate::KeyConnect;         //键盘指定操作
 using pvz_simulate::Shovel;				//铲除
 using pvz_time::Delay;					//时间延迟
 using pvz_time::Prejudge;				//时间预判
