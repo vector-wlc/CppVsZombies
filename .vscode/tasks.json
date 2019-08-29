@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "command": "g++",
+    "args": [
+        "-g",
+        "${file}",
+        "-std=c++1z",
+        "-I",
+        "${workspaceRoot}/CvZ/pvz_h/include",
+        "-l",
+        "pvz",
+        "-L",
+        "${workspaceRoot}/CvZ/pvz_h/lib",
+        "-o",
+        "${workspaceRoot}/output/${fileBasenameNoExtension}.exe"
+    ],
+    "problemMatcher": {
+        "owner": "cpp",
+        "fileLocation": [
+            "relative",
+            "${workspaceRoot}"
+        ],
+        "pattern": {
+            "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5
+        }
+    }
+}
