@@ -26,6 +26,8 @@
 #include <algorithm>
 #include <functional>
 
+namespace pvz
+{
 //用于储存位置信息
 struct GRID
 {
@@ -84,12 +86,6 @@ struct CARD_NAME
 
 extern HANDLE handle;
 extern int wave;
-
-//包含内存读取相关函数
-//熟悉并掌握使用此命名空间的函数可以定制属于自己的“自动”函数
-namespace pvz_memory
-{
-extern int mainobject;
 
 //读取内存函数
 template <typename T, typename... Args>
@@ -223,7 +219,7 @@ public:
 	//返回当前最大植物数目
 	int countMax()
 	{
-		return ReadMemory<int>(mainobject + 0xB0);
+		return ReadMemory<int>(0x6A9EC0, 0x768, 0xB0);
 	}
 
 	//返回植物所在行 数值范围：[0,5]
@@ -313,7 +309,7 @@ public:
 	//返回僵尸最大数目
 	int countMax()
 	{
-		return ReadMemory<int>(mainobject + 0x94);
+		return ReadMemory<int>(0x6A9EC0, 0x768, 0x94);
 	}
 
 	//判断僵尸是否存在
@@ -473,7 +469,7 @@ public:
 	//包括：弹坑 墓碑 罐子等
 	int countMax()
 	{
-		return ReadMemory<int>(mainobject + 0x120);
+		return ReadMemory<int>(0x6A9EC0, 0x768, 0x120);
 	}
 
 	//返回该格子物品的类型
@@ -514,6 +510,9 @@ int GameUi();
 
 //等待游戏开始
 void WaitGameStart();
+
+//等待游戏结束
+void WaitGameEnd();
 
 //获取指定类型植物的卡槽对象序列 植物类型与图鉴顺序相同，从0开始
 //返回的卡片对象序列范围：[0,9]
@@ -571,11 +570,6 @@ void GetZombieType(std::vector<int> &type_list);
 //僵尸的出怪类型将会储存在数组 zombies_type 中
 void GetWaveZombieType(std::vector<int> &zombie_type, int _wave = wave);
 
-} // namespace pvz_memory
-
-//包含时间操作函数
-namespace pvz_time
-{
 //预判函数
 //获取僵尸刷新时间戳
 //除 wave 1 10 20 最小预判时间分别为 -550 -700 -700 之外，其他波次最小预判时间均为 -200
@@ -600,11 +594,6 @@ void Delay(int time);
 //这种用法是错误的！
 void Until(int time);
 
-} // namespace pvz_time
-
-//包含模拟鼠标键盘操作函数
-namespace pvz_simulate
-{
 //模拟鼠标左键操作
 //使用示例：
 //LeftClick(400,300)-----点击pvz窗口中央
@@ -651,12 +640,6 @@ inline bool KeyDown(int key)
 }
 
 void KeyConnect(int key, std::function<void()> const &_operate);
-
-} // namespace pvz_simulate
-
-//包含用卡操作函数
-namespace pvz_card
-{
 
 //选择卡片用来战斗
 //使用示例：
@@ -729,12 +712,6 @@ void Card(std::initializer_list<CARD_NAME> lst);
 //以下用卡片名称使用Card,卡片名称为拼音首字母，具体参考pvz_data.h的命名
 //Card({{"ytzd",2,3},{"Mhblj",3,4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
 void Card(const std::string &card_name, std::initializer_list<CARD> lst);
-
-} // namespace pvz_card
-
-//包含用炮操作函数
-namespace pvz_pao
-{
 
 //记录炮的信息
 struct PAO_MESSAGE
@@ -925,11 +902,6 @@ public:
 //CvZ自定义炮类对象
 extern PaoOperator pao_cvz;
 
-} // namespace pvz_pao
-
-//包含自动操作函数
-namespace pvz_auto
-{
 //自动操作线程基类的基类 =_=
 class BaseBaseAutoThread
 {
@@ -1111,8 +1083,8 @@ private:
 	std::vector<ABSCI> absci;
 	std::vector<int> lst_plant_;
 	std::vector<int> lst_zombie_;
-	pvz_memory::PlantMemory plant;
-	pvz_memory::ZombieMemory zombie;
+	PlantMemory plant;
+	ZombieMemory zombie;
 	void get_min_absci_zombie();
 	GRID need_diancai_grid();
 	void auto_plant_diancai();
@@ -1171,11 +1143,6 @@ void StartAutoCollectThread();
 //停止自动收集
 void StopAutoCollectThread();
 
-} // namespace pvz_auto
-
-//包含cvz设置函数
-namespace pvz_script
-{
 //开关函数：开启高精度
 void OpenHighPrecision();
 
@@ -1185,6 +1152,6 @@ void OpenExamine();
 //取消自动退出机制
 void CancelAutoExit();
 
-} // namespace pvz_script
+} // namespace pvz
 
 #endif //!LIBPVZ_H

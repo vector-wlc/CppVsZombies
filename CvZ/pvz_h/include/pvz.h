@@ -14,25 +14,26 @@
 
 #include "libpvz.h"
 
-using pvz_auto::dian_cai_placer;		//放置垫材对象
-using pvz_auto::FixNut;					//修补坚果类
-using pvz_auto::ice_filler;				//存冰对象
-using pvz_auto::nut_fixer;				//修补坚果对象
-using pvz_auto::nv_pu_mi_ji;			//女仆秘籍对象
-using pvz_auto::StartAutoCollectThread; //自动收集
-using pvz_auto::StopAutoCollectThread;  //停止自动收集
-using pvz_card::Card;					//用卡
-using pvz_card::SelectCards;			//选卡
-using pvz_pao::PaoOperator;				//炮操作类
-using pvz_script::CancelAutoExit;		//取消自动退出机制
-using pvz_script::OpenExamine;			//开启检查
-using pvz_script::OpenHighPrecision;	//开启高精度
-using pvz_simulate::KeyDown;			//检测键盘是否按下
-using pvz_simulate::KeyConnect;         //键盘指定操作
-using pvz_simulate::Shovel;				//铲除
-using pvz_time::Delay;					//时间延迟
-using pvz_time::Prejudge;				//时间预判
-using pvz_time::Until;					//等待时间到
+using pvz::CancelAutoExit;		   //取消自动退出机制
+using pvz::Card;				   //用卡
+using pvz::Delay;				   //时间延迟
+using pvz::dian_cai_placer;		   //放置垫材对象
+using pvz::FixNut;				   //修补坚果类
+using pvz::ice_filler;			   //存冰对象
+using pvz::KeyConnect;			   //键盘指定操作
+using pvz::KeyDown;				   //检测键盘是否按下
+using pvz::nut_fixer;			   //修补坚果对象
+using pvz::nv_pu_mi_ji;			   //女仆秘籍对象
+using pvz::OpenExamine;			   //开启检查
+using pvz::OpenHighPrecision;	  //开启高精度
+using pvz::PaoOperator;			   //炮操作类
+using pvz::Prejudge;			   //时间预判
+using pvz::SelectCards;			   //选卡
+using pvz::Shovel;				   //铲除
+using pvz::StartAutoCollectThread; //自动收集
+using pvz::StopAutoCollectThread;  //停止自动收集
+using pvz::Until;				   //等待时间到
+using pvz::wave;                   //波数
 
 //如果波数在参数范围内
 template <class... Args>
@@ -71,70 +72,70 @@ void RunningInThread(FP fp, Args... args)
 //使用示例:
 //经典四炮：
 //UpdatePaoList({ {3,1},{4,1},{3,3},{4,3} });
-#define UpdatePaoList pvz_pao::pao_cvz.resetPaoList
+#define UpdatePaoList pvz::pao_cvz.resetPaoList
 
 //设置炮序限制 参数为 false 则解除炮序限制，true 则增加炮序限制
 //解除此限制后 fixPao 可铲种炮列表内的炮，tryPao 系列可使用， Pao 系列不可使用
 //增加此限制后 fixPao 不可铲种炮列表内的炮，tryPao 系列不可使用， Pao 系列可使用
-#define SetLimitPaoSequence pvz_pao::pao_cvz.setLimitPaoSequence
+#define SetLimitPaoSequence pvz::pao_cvz.setLimitPaoSequence
 
 //设定解决冲突模式
 //使用示例：
 //SetResolveConflictType(PaoOperator::DROP_POINT)---只解决落点冲突，不解决收集物点炮冲突
 //SetResolveConflictType(PaoOperator::COLLECTION)---只解决收集物点炮冲突，不解决落点冲突
-#define SetResolveConflictType pvz_pao::pao_cvz.setResolveConflictType
+#define SetResolveConflictType pvz::pao_cvz.setResolveConflictType
 
 //发炮函数：用户自定义位置发射
 //注意：尽量不要使用此函数操作位于炮列表中的炮，因为使用此函数后自动识别的炮序与UpdatePaolist更新的炮序将无效！
 //使用示例：
 //RawPao(1,2,2,9)-----------------------将位置为（1，2）的炮发射到（2，9）
 //RawPao({ {1,2,2,9},{1,3,5,9} })-------将位置为（1，2）的炮发射到（2，9），将位置为（1，3）的炮发射到（5，9）
-#define RawPao pvz_pao::pao_cvz.rawPao
+#define RawPao pvz::pao_cvz.rawPao
 
 //跳炮函数
 //使用示例：
 //Skipao(2)---跳过按照顺序即将要发射的2门炮
-#define SkipPao pvz_pao::pao_cvz.skipPao
+#define SkipPao pvz::pao_cvz.skipPao
 
 //发炮函数
 //使用示例：
 //Pao(2,9)----------------炮击二行，九列
 //Pao({ {2,9},{5,9} })-----炮击二行，九列，五行，九列
-#define Pao pvz_pao::pao_cvz.pao
+#define Pao pvz::pao_cvz.pao
 
 //自动找炮函数
 //使用示例
 //TryPao(2,9)----------------在炮列表中找到可用的炮后，炮击二行，九列
 //TryPao({ {2,9},{5,9} })-----在炮列表中找到可用的炮后，炮击二行，九列，五行，九列
 //注意：此函数无视炮序，慎用
-#define TryPao pvz_pao::pao_cvz.tryPao
+#define TryPao pvz::pao_cvz.tryPao
 
 //发炮函数 炮CD恢复自动发炮
 //使用示例：
 //RecoverPao(2,9)----------------炮击二行，九列
 //RecoverPao({ {2,9},{5,9} })-----炮击二行，九列，五行，九列
-#define RecoverPao pvz_pao::pao_cvz.recoverPao
+#define RecoverPao pvz::pao_cvz.recoverPao
 
 //屋顶修正飞行时间发炮. 此函数开销较大不适合精确键控.
 //此函数只适用于RE与ME 修正时间：387cs
 //使用示例：
 //RoofPao(3,7)---------------------修正飞行时间后炮击3行7列
 //RoofPao({ {2,9},{5,9} })---------修正飞行时间后炮击2行9列,5行9列
-#define RoofPao pvz_pao::pao_cvz.roofPao
+#define RoofPao pvz::pao_cvz.roofPao
 
 //自动找炮函数
 //使用示例
 //TryRoofPao(2,9)----------------在炮列表中找到可用的炮后，炮击二行，九列
 //TryRoofPao({ {2,9},{5,9} })-----在炮列表中找到可用的炮后，炮击二行，九列，五行，九列
 //注意：此函数无视炮序，慎用
-#define TryRoofPao pvz_pao::pao_cvz.tryRoofPao
+#define TryRoofPao pvz::pao_cvz.tryRoofPao
 
 //发炮函数：用户自定义位置发射，屋顶修正飞行时间发炮. 此函数开销较大不适合精确键控.
 //注意：尽量不要使用此函数操作位于炮列表中的炮，因为使用此函数后自动识别的炮序与UpdatePaolist更新的炮序将无效！
 //使用示例：
 //RawRoofPao(1,2,2,9)-----------------------将位置为（1，2）的炮发射到（2，9）
 //RawRoofPao({ {1,2,2,9},{1,3,5,9} })-------将位置为（1，2）的炮发射到（2，9），将位置为（1，3）的炮发射到（5，9）
-#define RawRoofPao pvz_pao::pao_cvz.rawRoofPao
+#define RawRoofPao pvz::pao_cvz.rawRoofPao
 
 //自动铲种炮函数
 //使用示例：
@@ -142,26 +143,26 @@ void RunningInThread(FP fp, Args... args)
 //FixPao(3,4,1)--------铲掉(3,4)位置的炮，将炮种植在(3,4+1)位置上/位移铲种炮
 //该函数能够不会自动补花盆与荷叶,由于铲种的实质为代奏，其与正常的炮不相同，
 //因此请不要把铲种炮写在炮列表里，铲种炮必须使用 RawPao || RawRoofPao 发射
-#define FixPao pvz_pao::pao_cvz.fixPao
+#define FixPao pvz::pao_cvz.fixPao
 
 //自动存冰函数，该函数可以自动补荷叶
 //使用示例：
 //StartAutoFillIceThread({{1,3},{2,3}})--------------在1行3列，2行3列存冰
-#define StartAutoFillIceThread pvz_auto::ice_filler.start
+#define StartAutoFillIceThread pvz::ice_filler.start
 
 //强制退出存冰线程
-#define StopAutoFillIceThread pvz_auto::ice_filler.stop
+#define StopAutoFillIceThread pvz::ice_filler.stop
 
 //使用咖啡豆函数（使用此函数之前必须使用StartAutoFillIceThread）
 //使用示例：
 //Coffee()-----自动使用优先级低的存冰位
-#define Coffee pvz_auto::ice_filler.coffee
+#define Coffee pvz::ice_filler.coffee
 
 //女仆秘籍
-#define StartPreventDancerAdvance pvz_auto::nv_pu_mi_ji.start
+#define StartPreventDancerAdvance pvz::nv_pu_mi_ji.start
 
 //停止女仆秘籍
-#define StopPreventDancerAdvance pvz_auto::nv_pu_mi_ji.stop
+#define StopPreventDancerAdvance pvz::nv_pu_mi_ji.stop
 
 //自动种植垫材线程
 //第一个参数：指定一组卡片作为垫材
@@ -171,10 +172,10 @@ void RunningInThread(FP fp, Args... args)
 //StartAutoSetDianCaiThread({1,2,3,4})------将第 1 2 3 4 张卡片设为垫材，默认全场都从第九列开始垫，默认只垫 红眼 白眼
 //StartAutoSetDianCaiThread({1,2,3,4},{{2,6},{4,5}})-----将第 1 2 3 4 张卡片设为垫材，只垫第 2 4 行，而且第二行从第六列开始垫，第四行从第五列开始垫
 //StartAutoSetDianCaiThread({1,2,3,4},{{2,6},{4,5}},{23,32,7})----将第 1 2 3 4 张卡片设为垫材，只垫第 2 4 行，而且第二行从第六列开始垫，第四行从第五列开始垫,垫红白眼和橄榄
-#define StartAutoSetDianCaiThread pvz_auto::dian_cai_placer.start
+#define StartAutoSetDianCaiThread pvz::dian_cai_placer.start
 
 //停止自动种植垫材
-#define StopAutoSetDianCaiThread pvz_auto::dian_cai_placer.stop
+#define StopAutoSetDianCaiThread pvz::dian_cai_placer.stop
 
 //自动维修坚果类植物函数(第一个参数为3则维修小坚果，为23则维修高坚果，为30则修补南瓜，
 //不接受除此之外的任何参数，此函数自动补种荷叶
@@ -182,9 +183,9 @@ void RunningInThread(FP fp, Args... args)
 //StartAutoFixNutThread(30)--------------维修全场南瓜
 //StartAutoFixNutThread(3, {{1, 2}, {3, 4}, {4, 5}})-------维修一行二列，三行四列，四行五列的坚果
 //StartAutoFixNutThread(23, {{1, 2}, {3, 4},1333)----------维修一行二列，三行四列的高坚果，等待血量降至1333开始修补
-#define StartAutoFixNutThread pvz_auto::nut_fixer.start
+#define StartAutoFixNutThread pvz::nut_fixer.start
 
 //强制退出修坚果线程
-#define StopAutoFixNutThread pvz_auto::nut_fixer.stop
+#define StopAutoFixNutThread pvz::nut_fixer.stop
 
 #endif //PVZ_H

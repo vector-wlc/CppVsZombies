@@ -6,7 +6,11 @@
 
 #include "pvz.h"
 
-using namespace pvz_memory; //如果要使用关于内存读取的接口，请使用这条语句，没有为什么
+using namespace pvz; //直接使用名称空间 pvz 的所有的标识符
+
+// 上句对于此程序来说亦可以使用下列语句
+// using pvz::MouseCol;
+// using pvz::MouseRow;
 
 ////////////////// 使用示例
 
