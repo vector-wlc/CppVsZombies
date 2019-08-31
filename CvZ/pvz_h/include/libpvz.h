@@ -713,25 +713,6 @@ void Card(std::initializer_list<CARD_NAME> lst);
 //Card({{"ytzd",2,3},{"Mhblj",3,4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
 void Card(const std::string &card_name, std::initializer_list<CARD> lst);
 
-//记录炮的信息
-struct PAO_MESSAGE
-{
-	int row;				 //所在行
-	int col;				 //所在列
-	int recover_time;		 //恢复时间
-	int index;				 //炮的对象序列
-	bool is_in_list = false; //记录是否在炮列表内
-
-	//重载 ==
-	friend bool operator==(const PAO_MESSAGE &p1, const PAO_MESSAGE &p2)
-	{
-		return p1.row == p2.row && p1.col == p2.col;
-	}
-
-	PAO_MESSAGE() : row(0), col(0), recover_time(0), index(0) {}
-	PAO_MESSAGE(int _row, int _col) : row(_row), col(_col), recover_time(0), index(0) {}
-};
-
 //炮操作类：使用炮操作类可以建立多个炮列表，使得复杂的操作能够更好的实现
 //public 成员函数介绍：
 //autoGetPaoList：自动识别炮列表，使用此函数将会使对象内的炮列表重置为全场所有炮的位置
@@ -746,6 +727,25 @@ struct PAO_MESSAGE
 class PaoOperator
 {
 private:
+	//记录炮的信息
+	struct PAO_MESSAGE
+	{
+		int row;				 //所在行
+		int col;				 //所在列
+		int recover_time;		 //恢复时间
+		int index;				 //炮的对象序列
+		bool is_in_list = false; //记录是否在炮列表内
+
+		//重载 ==
+		friend bool operator==(const PAO_MESSAGE &p1, const PAO_MESSAGE &p2)
+		{
+			return p1.row == p2.row && p1.col == p2.col;
+		}
+
+		PAO_MESSAGE() : row(0), col(0), recover_time(0), index(0) {}
+		PAO_MESSAGE(int _row, int _col) : row(_row), col(_col), recover_time(0), index(0) {}
+	};
+	
 	//PAO_MESSAGE 迭代器
 	using pao_message_iterator = std::vector<PAO_MESSAGE>::iterator;
 
@@ -773,14 +773,13 @@ private:
 		float drop_col;
 		int fire_time;
 	};
-	//冲突解决方式
-	static int conflict_resolution_type;
-	//炮列表，记录炮的迭代器信息
-	std::vector<pao_message_iterator> paolist;
-	//记录当前即将发射的下一门炮
-	int nowpao;
-	//是否限制炮序
-	bool limit_pao_sequence;
+
+	static int conflict_resolution_type;	   //冲突解决方式
+	static std::vector<PAO_MESSAGE> all_pao;   //所有炮的信息
+	std::vector<pao_message_iterator> paolist; //炮列表，记录炮的迭代器信息
+	int nowpao;								   //记录当前即将发射的下一门炮
+	bool limit_pao_sequence;				   //是否限制炮序
+
 	//屋顶炮飞行时间辅助数据
 	struct
 	{
@@ -816,7 +815,7 @@ public:
 
 	//构造函数，完成变量初始化
 	PaoOperator(std::initializer_list<GRID> lst);
-	PaoOperator();
+	PaoOperator(bool initialize_paolist = true);
 	~PaoOperator();
 
 	//设置炮序限制 参数为 false 则解除炮序限制，true 则增加炮序限制
@@ -829,6 +828,9 @@ public:
 	//setResolveConflictType(PaoOperator::DROP_POINT)---只解决落点冲突，不解决收集物点炮冲突
 	//setResolveConflictType(PaoOperator::COLLECTION)---只解决收集物点炮冲突，不解决落点冲突
 	static void setResolveConflictType(int type);
+
+	//得到炮的所有信息，此函数用户不能调用
+	static void getAllPaoMessage_userForbidden();
 
 	//改变炮的信息
 	//请在手动或使用基础函数例如 Card 改变炮的信息后立即使用此函数
