@@ -3,7 +3,7 @@
         {
             "name": "Windows",
             "includePath": [
-                "${workspaceRoot}/CvZ/pvz_h/include"
+                "${workspaceRoot}/pvz_h/include"
             ],
             "cStandard": "c11",
             "cppStandard": "c++17"
