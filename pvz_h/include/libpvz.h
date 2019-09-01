@@ -778,7 +778,7 @@ private:
 	static std::vector<PAO_MESSAGE> all_pao;   //所有炮的信息
 	std::vector<pao_message_iterator> paolist; //炮列表，记录炮的迭代器信息
 	int nowpao;								   //记录当前即将发射的下一门炮
-	bool limit_pao_sequence;				   //是否限制炮序
+	bool limit_pao_sequence = true;				   //是否限制炮序
 
 	//屋顶炮飞行时间辅助数据
 	struct
