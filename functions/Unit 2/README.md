@@ -8,4 +8,9 @@
 * 按键绑定：KeyConnect<br>
 * 鼠标位置读取：MouseRow MouseCol<br>
 * 创建子线程：RunningInThread<br>
-* 子线程辅助操作：StartAutoFillIceThread StartAutoFixNutThread StartAutoSetDianCaiThread<br> StartAutoCollectThread StartPreventDancerAdvance
+* 子线程辅助操作：<br>
+自动存冰：StartAutoFillIceThread <br>
+修补坚果：StartAutoFixNutThread <br>
+放置垫材：StartAutoSetDianCaiThread<br>
+自动收集：StartAutoCollectThread<br>
+女仆秘籍：StartPreventDancerAdvance<br>
