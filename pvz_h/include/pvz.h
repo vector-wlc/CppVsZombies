@@ -33,7 +33,7 @@ using pvz::Shovel;				   //铲除
 using pvz::StartAutoCollectThread; //自动收集
 using pvz::StopAutoCollectThread;  //停止自动收集
 using pvz::Until;				   //等待时间到
-using pvz::wave;                   //波数
+using pvz::wave;				   //波数
 
 //如果波数在参数范围内
 template <class... Args>

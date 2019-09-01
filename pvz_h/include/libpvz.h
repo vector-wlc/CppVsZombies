@@ -745,7 +745,7 @@ private:
 		PAO_MESSAGE() : row(0), col(0), recover_time(0), index(0) {}
 		PAO_MESSAGE(int _row, int _col) : row(_row), col(_col), recover_time(0), index(0) {}
 	};
-	
+
 	//PAO_MESSAGE 迭代器
 	using pao_message_iterator = std::vector<PAO_MESSAGE>::iterator;
 
