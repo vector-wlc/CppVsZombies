@@ -16,7 +16,7 @@ int main() // main, 程序的入口
     using pvz::MouseRow;
 
     //可以用 KeyConnect 种植垫材
-    KeyConnect('Q', [=]() {
+    KeyConnect('Q', [&]() {
         Card("xpg", MouseRow(), MouseCol());
     });
 
