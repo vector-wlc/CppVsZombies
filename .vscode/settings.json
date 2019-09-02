@@ -2,6 +2,7 @@
     "files.associations": {
         "initializer_list": "cpp",
         "valarray": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "vector": "cpp"
     }
 }

@@ -778,7 +778,7 @@ private:
 	static std::vector<PAO_MESSAGE> all_pao;   //所有炮的信息
 	std::vector<pao_message_iterator> paolist; //炮列表，记录炮的迭代器信息
 	int nowpao;								   //记录当前即将发射的下一门炮
-	bool limit_pao_sequence = true;				   //是否限制炮序
+	bool limit_pao_sequence = true;			   //是否限制炮序
 
 	//屋顶炮飞行时间辅助数据
 	struct
@@ -1070,19 +1070,21 @@ extern NvPuMiJi nv_pu_mi_ji;
 //goOn：继续放置垫材，使用此函数使得放置垫材线程继续工作
 //resetSetDianCaiList：重置垫材优先放置列表
 //resetProtectedPlantList：重置保护植物位置列表
-//resetPlantList：重置被用来当作垫材的植物
-//resetZombieList：重置需要垫的僵尸
-class PlaceDianCai : public BaseAutoThread
+//resetDianCaiSeedList：重置被用来当作垫材的植物
+//resetZombieTypeList：重置需要垫的僵尸
+class PlaceDianCai : public BaseBaseAutoThread
 {
 private:
-	//记录一些横坐标信息
-	struct ABSCI
+	//记录一些放置垫材的信息
+	struct PLACE_MESSAGE
 	{
-		int plant;	//记录植物最大的横坐标值
-		float zombie; //记录巨人僵尸最小的横坐标值
+		int plant_max_abscissa;	//记录植物最大的横坐标值
+		float zombie_min_abscissa; //记录巨人僵尸最小的横坐标值
+		int place_max_col;		   //记录放置的最大列数
+		bool is_plantble;		   //是否要种植物
 	};
 
-	std::vector<ABSCI> absci;
+	std::vector<PLACE_MESSAGE> place_message_;
 	std::vector<int> lst_plant_;
 	std::vector<int> lst_zombie_;
 	PlantMemory plant;
@@ -1111,16 +1113,17 @@ public:
 	//resetProtectedPlantList({{2,3},{3,4}})------将要保护的植物的位置重置为{2,3},{3,4}
 	//注意：此函数必须配合要垫的行数，如果出现重置的行数不在要垫的范围内，就会报错
 	void resetProtectedPlantList(std::initializer_list<GRID> lst = {});
+	void resetSetDianCaiList();
 
 	//重置被当作垫材的植物
 	//使用示例：
-	//resetPlantList({1,2,3})----将第1 2 3张卡片设置为垫材
-	void resetPlantList(std::initializer_list<int> lst) { lst_plant_ = lst; }
+	//resetDianCaiSeedList({1,2,3})----将第1 2 3张卡片设置为垫材
+	void resetDianCaiSeedList(std::initializer_list<int> lst) { lst_plant_ = lst; }
 
 	//重置要垫的僵尸类型
 	//使用示例：
-	//resetZombieList({23,32,0})-----将要垫的僵尸改为 白眼 红眼 普僵
-	void resetZombieList(std::initializer_list<int> lst) { lst_zombie_ = lst; }
+	//resetZombieTypeList({23,32,0})-----将要垫的僵尸改为 白眼 红眼 普僵
+	void resetZombieTypeList(std::initializer_list<int> lst) { lst_zombie_ = lst; }
 
 	//重置垫材放置位置列表
 	//使用示例：
@@ -1135,8 +1138,8 @@ public:
 //goOn：继续放置垫材，使用此函数使得放置垫材线程继续工作
 //resetSetDianCaiList：重置垫材优先放置列表
 //resetProtectedPlantList：重置保护植物位置列表
-//resetPlantList：重置被用来当作垫材的植物
-//resetZombieList：重置需要垫的僵尸
+//resetDianCaiSeedList：重置被用来当作垫材的植物
+//resetZombieTypeList：重置需要垫的僵尸
 extern PlaceDianCai dian_cai_placer;
 
 //开始自动收集
