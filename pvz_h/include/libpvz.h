@@ -957,8 +957,8 @@ public:
 
 	//重置存冰位置
 	//使用示例：
-	//resetIceList({{3,4},{5,6}})-----将存冰位置重置为{3，4}，{5，6}
-	void resetIceList(std::initializer_list<GRID> lst);
+	//resetFillList({{3,4},{5,6}})-----将存冰位置重置为{3，4}，{5，6}
+	void resetFillList(std::initializer_list<GRID> lst);
 
 	//线程开始工作
 	//使用示例：
@@ -1000,8 +1000,8 @@ public:
 
 	//重置坚果修补位置
 	//使用示例：
-	//resetNutList({{2,3},{3,4}})-------位置被重置为{2，3}，{3，4}
-	void resetNutList(std::initializer_list<GRID> lst);
+	//resetFixList({{2,3},{3,4}})-------位置被重置为{2，3}，{3，4}
+	void resetFixList(std::initializer_list<GRID> lst);
 
 	//线程开始工作，此函数开销较大，不建议多次调用
 	//第一个参数为坚果类型：3--坚果，23--高坚果，30--南瓜头
