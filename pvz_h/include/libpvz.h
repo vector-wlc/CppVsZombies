@@ -87,6 +87,8 @@ struct CARD_NAME
 extern HANDLE handle;
 extern int wave;
 
+//########## memory ###############
+
 //读取内存函数
 template <typename T, typename... Args>
 T ReadMemory(Args... args)
@@ -124,8 +126,6 @@ int MouseRow();
 //返回鼠标所在列
 float MouseCol();
 
-/* time */
-
 //判断游戏是否暂停
 bool GamePaused();
 
@@ -146,6 +146,79 @@ int NowWave();
 
 //返回初始刷新倒计时
 int InitialCountdown();
+
+//返回一行的冰道坐标 范围：[0,800]
+//使用示例：
+//ice_absci(0)------得到第一行的冰道坐标
+int IceAbscissa(int i);
+
+//获取游戏信息
+//1: 主界面, 2: 选卡, 3: 正常游戏/战斗, 4: 僵尸进屋, 7: 模式选择.
+int GameUi();
+
+/* 一些常用的函数 */
+
+//等待游戏开始
+void WaitGameStart();
+
+//等待游戏结束
+void WaitGameEnd();
+
+//获取指定类型植物的卡槽对象序列 植物类型与图鉴顺序相同，从0开始
+//返回的卡片对象序列范围：[0,9]
+//GetSeedIndex(16)------------获得荷叶的卡槽对象序列
+//GetSeedIndex(16,true)-------获得模仿者荷叶的卡槽对象序列
+int GetSeedIndex(int type, bool imitator = false);
+
+//得到指定位置和类型的植物对象序列
+//当参数type为默认值-1时该函数无视南瓜花盆荷叶
+//使用示例：
+//GetPlantIndex(3,4)------如果三行四列有除南瓜花盆荷叶之外的植物时，返回该植物的对象序列，否则返回-1
+//GetPlantIndex(3,4,47)---如果三行四列有春哥，返回其对象序列，否则返回-1
+//GetPlantIndex(3,4,33)---如果三行四列有花盆，返回其对象序列，否则返回-1
+int GetPlantIndex(int row, int col, int type = -1);
+
+//检查僵尸是否存在
+//使用示例
+//ExamineZombieExist()-------检查场上是否存在僵尸
+//ExamineZombieExist(23)-------检查场上是否存在巨人僵尸
+//ExamineZombieExist(-1,4)-----检查第四行是否有僵尸存在
+//ExamineZombieExist(23,4)-----检查第四行是否有巨人僵尸存在
+bool ExamineZombieExist(int type = -1, int row = -1);
+
+//判断该格子是否能种植物
+//该函数不适用于屋顶场景
+//此函数只能判断此格子能不能种植物，但并不能判断此格子是否有植物
+//使用示例：
+//IsPlantable(3,3)-----3行3列如果能种植物，默认为非灰烬植物(即使此格子有非南瓜花盆荷叶的植物)，返回true,否则返回false
+//IsPlantable(3,3,true)----3行3列如果能种植物，为灰烬植物，返回true,否则返回false
+//如果判定的植物是灰烬植物则会无视冰车
+bool IsPlantable(int row, int col, bool hui_jin = false);
+
+//检测巨人是否对该格子植物锤击
+//IsHammering(3,4)------------如果该格子有巨人不同时举锤返回true，否则返回false.
+bool IsHammering(int row, int col, bool pumpkin = false);
+
+//检测该格子是否会被即将爆炸的小丑炸到
+//使用示例：IsExplode(3,4)-------如果（3，4）会被小丑炸到返回true 否则返回false.
+bool IsExplode(int row, int col);
+
+//得到僵尸出怪类型
+//参数为 vector 数组
+//使用示例：
+//std::vector<int>zombies_type;
+//GetZombieType(zombies_type);
+//僵尸的出怪类型将会储存在数组 zombies_type 中
+void GetZombieType(std::vector<int> &type_list);
+
+//得到相应波数的出怪类型
+//参数为 vector 数组
+//使用示例：
+//std::vector<int>zombies_type;
+//GetWaveZombieType(zombies_type);-------得到当前波数出怪类型
+//GetWaveZombieType(zombies_type, 1);-------得到第一波出怪类型
+//僵尸的出怪类型将会储存在数组 zombies_type 中
+void GetWaveZombieType(std::vector<int> &zombie_type, int _wave = wave);
 
 //抽象内存类
 class AbstractMemory
@@ -497,78 +570,7 @@ public:
 	}
 };
 
-//返回一行的冰道坐标 范围：[0,800]
-//使用示例：
-//ice_absci(0)------得到第一行的冰道坐标
-int IceAbscissa(int i);
-
-//获取游戏信息
-//1: 主界面, 2: 选卡, 3: 正常游戏/战斗, 4: 僵尸进屋, 7: 模式选择.
-int GameUi();
-
-/* 一些常用的函数 */
-
-//等待游戏开始
-void WaitGameStart();
-
-//等待游戏结束
-void WaitGameEnd();
-
-//获取指定类型植物的卡槽对象序列 植物类型与图鉴顺序相同，从0开始
-//返回的卡片对象序列范围：[0,9]
-//GetSeedIndex(16)------------获得荷叶的卡槽对象序列
-//GetSeedIndex(16,true)-------获得模仿者荷叶的卡槽对象序列
-int GetSeedIndex(int type, bool imitator = false);
-
-//得到指定位置和类型的植物对象序列
-//当参数type为默认值-1时该函数无视南瓜花盆荷叶
-//使用示例：
-//GetPlantIndex(3,4)------如果三行四列有除南瓜花盆荷叶之外的植物时，返回该植物的对象序列，否则返回-1
-//GetPlantIndex(3,4,47)---如果三行四列有春哥，返回其对象序列，否则返回-1
-//GetPlantIndex(3,4,33)---如果三行四列有花盆，返回其对象序列，否则返回-1
-int GetPlantIndex(int row, int col, int type = -1);
-
-//检查僵尸是否存在
-//使用示例
-//ExamineZombieExist()-------检查场上是否存在僵尸
-//ExamineZombieExist(23)-------检查场上是否存在巨人僵尸
-//ExamineZombieExist(-1,4)-----检查第四行是否有僵尸存在
-//ExamineZombieExist(23,4)-----检查第四行是否有巨人僵尸存在
-bool ExamineZombieExist(int type = -1, int row = -1);
-
-//判断该格子是否能种植物
-//该函数不适用于屋顶场景
-//此函数只能判断此格子能不能种植物，但并不能判断此格子是否有植物
-//使用示例：
-//IsPlantable(3,3)-----3行3列如果能种植物，默认为非灰烬植物(即使此格子有非南瓜花盆荷叶的植物)，返回true,否则返回false
-//IsPlantable(3,3,true)----3行3列如果能种植物，为灰烬植物，返回true,否则返回false
-//如果判定的植物是灰烬植物则会无视冰车
-bool IsPlantable(int row, int col, bool hui_jin = false);
-
-//检测巨人是否对该格子植物锤击
-//IsHammering(3,4)------------如果该格子有巨人不同时举锤返回true，否则返回false.
-bool IsHammering(int row, int col, bool pumpkin = false);
-
-//检测该格子是否会被即将爆炸的小丑炸到
-//使用示例：IsExplode(3,4)-------如果（3，4）会被小丑炸到返回true 否则返回false.
-bool IsExplode(int row, int col);
-
-//得到僵尸出怪类型
-//参数为 vector 数组
-//使用示例：
-//std::vector<int>zombies_type;
-//GetZombieType(zombies_type);
-//僵尸的出怪类型将会储存在数组 zombies_type 中
-void GetZombieType(std::vector<int> &type_list);
-
-//得到相应波数的出怪类型
-//参数为 vector 数组
-//使用示例：
-//std::vector<int>zombies_type;
-//GetWaveZombieType(zombies_type);-------得到当前波数出怪类型
-//GetWaveZombieType(zombies_type, 1);-------得到第一波出怪类型
-//僵尸的出怪类型将会储存在数组 zombies_type 中
-void GetWaveZombieType(std::vector<int> &zombie_type, int _wave = wave);
+// ########################### time #####################
 
 //预判函数
 //获取僵尸刷新时间戳
@@ -593,6 +595,8 @@ void Delay(int time);
 //Until(-100);
 //这种用法是错误的！
 void Until(int time);
+
+//######################## mouse and keyboard ###########################
 
 //模拟鼠标左键操作
 //使用示例：
@@ -904,6 +908,8 @@ public:
 //CvZ自定义炮类对象
 extern PaoOperator pao_cvz;
 
+// ################# auto thread ########################
+
 //自动操作线程基类的基类 =_=
 class BaseBaseAutoThread
 {
@@ -1147,6 +1153,8 @@ void StartAutoCollectThread();
 
 //停止自动收集
 void StopAutoCollectThread();
+
+// ########################  mode select #################
 
 //开关函数：开启高精度
 void OpenHighPrecision();
