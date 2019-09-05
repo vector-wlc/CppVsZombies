@@ -85,6 +85,21 @@ void RunningInThread(FP fp, Args... args)
 //SetResolveConflictType(PaoOperator::COLLECTION)---只解决收集物点炮冲突，不解决落点冲突
 #define SetResolveConflictType pvz::pao_cvz.setResolveConflictType
 
+//改变炮的信息
+//请在手动或使用基础函数例如 Card 改变炮的信息后立即使用此函数
+//使用示例：
+//ChangePaoMessage(2,3,2,3)--------在手动铲种(2,3)位置的炮后，更改相关炮的信息
+//ChangePaoMessage(2,3,2,4)--------手动位移铲种(2,3)位置的炮后，更改相关炮的信息
+//ChangePaoMessage(0,0,2,3)--------手动增加(2,3)位置的炮后，更改相关炮的信息
+#define ChangePaoMessage pvz::pao_cvz.changePaoMessage
+
+//设置即将发射的下一门炮
+//此函数只有在限制炮序的时候才可调用
+//使用示例：
+//SetNextPao(10)------将炮列表中第十门炮设置为下一门即将发射的炮
+//setNextPao(2, 8)------将炮列表中位于 (2, 8) 的炮设置为下一门即将发射的炮
+#define SetNextPao pvz::pao_cvz.setNextPao
+
 //发炮函数：用户自定义位置发射
 //注意：尽量不要使用此函数操作位于炮列表中的炮，因为使用此函数后自动识别的炮序与UpdatePaolist更新的炮序将无效！
 //使用示例：
