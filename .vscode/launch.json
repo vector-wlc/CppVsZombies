@@ -12,7 +12,7 @@
             "environment": [],
             "externalConsole": true,
             "MIMode": "gdb",
-            "miDebuggerPath": "E:\\PVZ\\C++ vs. Zombies\\CvZ\\MinGW\\bin\\gdb32.exe",
+            "miDebuggerPath": "E:\\setup\\MinGW\\bin\\gdb32.exe",
             "preLaunchTask": "g++",	
             "setupCommands": [
                 {
