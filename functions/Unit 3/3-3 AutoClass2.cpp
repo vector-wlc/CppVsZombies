@@ -44,12 +44,15 @@ int main()
     KeyConnect('A', [&]() {
         nv_pu_mi_ji.start(); //开始女仆秘籍
     });
+    
     KeyConnect('S', [&]() {
         nv_pu_mi_ji.pause(); //暂停女仆秘籍
     });
+
     KeyConnect('D', [&]() {
         nv_pu_mi_ji.goOn(); //继续女仆秘籍
     });
+
     KeyConnect('F', [&]() {
         nv_pu_mi_ji.stop(); //停止女仆秘籍
     });

@@ -806,6 +806,8 @@ private:
 	void base_fire_roof_paos(std::vector<RP> lst);
 	//铲种炮
 	void shovel_and_plant_pao(int row, int col, int move_col, pao_message_iterator it, int delay_time);
+	//尝试铲种炮
+	void try_shovel_and_plant_pao();
 	//改变炮的信息
 	static void change_pao_message(pao_message_iterator it, int now_row, int now_col);
 
@@ -907,6 +909,9 @@ public:
 
 	//铲种炮
 	void fixPao(int row, int col, int move_col = 0, int delay_time = 0);
+
+	//尝试铲种炮
+	void tryFixPao();
 };
 
 //CvZ自定义炮类对象
