@@ -156,8 +156,6 @@ int IceAbscissa(int i);
 //1: 主界面, 2: 选卡, 3: 正常游戏/战斗, 4: 僵尸进屋, 7: 模式选择.
 int GameUi();
 
-/* 一些常用的函数 */
-
 //等待游戏开始
 void WaitGameStart();
 
@@ -1162,6 +1160,12 @@ void OpenExamine();
 
 //取消自动退出机制
 void CancelAutoExit();
+
+//在调用此函数处重新打印
+void StartReprint();
+
+//在调用此函数处结束重复打印
+void EndReprint();
 
 } // namespace pvz
 
