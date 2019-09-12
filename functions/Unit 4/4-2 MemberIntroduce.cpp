@@ -58,6 +58,8 @@ int main()
     pao_list.fixPao(4, 5, 1);      // 位移铲种位置为(4, 5)的炮，种的炮将向右位移一格
     pao_list.fixPao(4, 5, 0, 100); // 铲种位置为(4, 5)的炮，当炮被铲后，延迟 100cs 再进行相关种植操作
 
+    pao_list.tryFixPao(); // 尝试铲种炮，铲种即将发射的一门炮
+
     pao_list.recoverPao(3, 9); // 等待下一门炮恢复立即发往(3, 9)
 
     pao_list.rawRoofPao(1, 1, 2, 2);

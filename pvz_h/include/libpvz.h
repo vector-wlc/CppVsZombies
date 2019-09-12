@@ -717,17 +717,6 @@ void Card(std::initializer_list<CARD_NAME> lst);
 //Card({{"ytzd",2,3},{"Mhblj",3,4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
 void Card(const std::string &card_name, std::initializer_list<CARD> lst);
 
-//炮操作类：使用炮操作类可以建立多个炮列表，使得复杂的操作能够更好的实现
-//public 成员函数介绍：
-//autoGetPaoList：自动识别炮列表，使用此函数将会使对象内的炮列表重置为全场所有炮的位置
-//resetPaoList：手动重置炮列表，与UpdatePaolist用法相同
-//skipPao：跳过一定数量的炮，用法与SkipPao相同
-//rawPao：用户自定义位置发射炮，用法与RawPao相同
-//pao：用炮函数，用法与Pao相同
-//recoverPao：等待炮恢复立即用炮，用法与RecoverPao相同
-//roofPao：屋顶修正时间发炮，用法与RoofPao相同
-//rawRoofPao：屋顶用户自定义位置修正时发炮，用法与RawRoofPao相同
-//fixPao：铲种炮，用法与FixPao相同
 class PaoOperator
 {
 private:
