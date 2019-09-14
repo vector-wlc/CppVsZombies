@@ -38,7 +38,7 @@ int main()
                 //所以可以延迟 50 来达到冰冻全部僵尸的效果，这里 50 是随便取的，
                 //你可以取得更多或更少，根据实际操作需求来定
                 Until(601 - 298 + 50);
-                Coffee();
+                ice_filler.coffee();
             }
         }
         else if (wave_in(2, 6, 11, 15, 19))
@@ -55,7 +55,7 @@ int main()
             {
                 //僵尸在 1800 刷新，其余参数的加减请参考第 40 行的注释
                 Until(1800 - 298 + 50);
-                Coffee();
+                ice_filler.coffee();
             }
         }
         else if (wave_in(3, 7, 12, 16))
@@ -63,7 +63,7 @@ int main()
             Prejudge(1800 - 373 - 200, wave);
             Pao({{2, 8.5}, {5, 8.5}});
             Until(1800 - 298 + 50);
-            Coffee();
+            ice_filler.coffee();
         }
         else if (wave_in(4, 8, 13, 17))
         {
@@ -84,12 +84,12 @@ int main()
             Until(-55 + 373 - 100);
             Card({{"ytzd", 2, 9}});
             Until(601 - 298 + 50);
-            Coffee();
+            ice_filler.coffee();
         }
         else //if(wave == 20)
         {
             Prejudge(150, wave);
-            Coffee(); //冰杀小偷
+            ice_filler.coffee(); //冰杀小偷
             Delay(298 + 500);
             RecoverPao({{2, 9}, {5, 9}, {2, 8.5}, {5, 8.5}});
         }

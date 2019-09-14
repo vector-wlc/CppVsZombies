@@ -16,6 +16,7 @@ int main()
     SelectCards({{"hbg"}, {"Mhbg"}, {"kfd"}, {"hmg"}, {"wg"}, {"ytzd"}, {"ngt"}, {"xpg"}, {"ygg"}, {"dxg"}});
 
     ice_filler.start({{1, 1}, {5, 1}, {3, 7}});
+    nut_fixer.start(30, {{1, 1}, {2, 1}, {4, 1}, {5, 1}});
 
     for (wave = 1; wave < 21; wave++)
         switch (wave) // 这里也可以用 if  else if  else 结构
