@@ -9,7 +9,7 @@
 // 收尾自动选择红眼数目最少的行，其余行直接炸死
 
 // 收尾
-void Ending();
+void WaveEnding();
 
 int main()
 {
@@ -40,7 +40,7 @@ int main()
                 if (wave == 5)
                     ice_filler.resetFillList({{1, 1}, {5, 1}});
                 if (wave == 19)
-                    Ending();
+                    WaveEnding();
             }
             break;
 
@@ -63,7 +63,7 @@ int main()
             }
             else
             {
-                Ending();
+                WaveEnding();
             }
             break;
 
@@ -79,7 +79,7 @@ int main()
         case 20:
             Prejudge(-55, wave);
             Pao({{2, 9}, {4, 9}});
-            Ending();
+            WaveEnding();
             break;
 
         default:
@@ -91,7 +91,7 @@ int main()
     return 0;
 }
 
-void Ending()
+void WaveEnding()
 {
     if (wave == 20)
     {
