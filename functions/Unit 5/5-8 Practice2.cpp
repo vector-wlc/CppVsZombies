@@ -18,7 +18,7 @@ int main()
     ice_filler.start({{1, 1}, {5, 1}, {3, 7}});
 
     for (wave = 1; wave < 21; wave++)
-        switch (wave)
+        switch (wave) // 这里也可以用 if  else if  else 结构
         {
         case 1:
         case 2:
@@ -49,12 +49,9 @@ int main()
         case 11:
         case 14:
         case 17:
-            Prejudge(50, wave);
+            Prejudge(400, wave);
             if (wave == 3 && pvz::ExamineZombieExist(12, 3))
-            {
-                Shovel(3, 9);
-                Card("wg", 3, 9);
-            }
+                Card("wg", 3, 8);
 
             Until(1500 - 373 - 200);
             Pao({{2, 8.5}, {4, 8.5}});
@@ -96,7 +93,10 @@ int main()
 void Ending()
 {
     if (wave == 20)
+    {
+        Delay(500);
         RecoverPao({{2, 9}, {4, 9}});
+    }
     else
         RecoverPao({{2, 8}, {4, 8}});
 
