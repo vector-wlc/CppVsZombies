@@ -25,7 +25,7 @@ int main()
     UpdatePaoList({}); 
     // 为对象设定炮列表
     ground_pao.resetPaoList({{1, 6}, {2, 6}, {3, 6}, {4, 6}, {5, 6}});
-    wind_pao.resetPaoList({{{1, 1}, {2, 1}, {3, 1}, {4, 1}, {5, 1}}});
+    wind_pao.resetPaoList({{1, 1}, {2, 1}, {3, 1}, {4, 1}, {5, 1}});
 
     // 接下来只需要无脑的使用 MyRoofPao 即可，由于这个阵型没有落点冲突
     // 所以完全不需要考虑炮序的问题

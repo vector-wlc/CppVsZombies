@@ -1,30 +1,39 @@
 
 // 此文件主要介绍炮操作类成员函数之间的相互配合
+// 所有的成员根据模式分大概可以分为四类
 
 #include "pvz.h"
 
 int main()
 {
-    UpdatePaoList({}); //使用炮操作类之前不要忘了把 CvZ 的炮操作对象的列表清零
+    pvz::pao_cvz.resetPaoList({}); // 使用炮操作类之前不要忘了把 CvZ 的炮操作对象的列表清零，或者你可以直接使用它
+    auto &other_name = pvz::pao_cvz; // 为 pao_cvz 取别名
 
-    ///////////////////// 模式 1 : 限制炮序
-    // 当限制炮序时， 就是 pao 系函数， setNextPao， skipPao之间的相互配合使用
-    // 铲种炮时，由于 fixPao不能铲种炮列表内的炮，所以我们需要使用 rawPao 系列发射铲种炮
-    // 我们可以设定多个炮列表来避免一些落点与炮身的冲突
-    // 比如我们可以将一些不可能冲突的炮写进一个炮列表
-    // 把可能冲突的炮写进另一个炮列表，我们就可以很轻松的规划炮列表来避免落点冲突
-    // 我们还可以把风炮写进一个炮列表，把平地炮写进另一个炮列表
-    // 这样发射哪种炮我们就一目了然了
-    // 当不指定是否限制炮序时，默认限制炮序
-    // 当然我们如果将解决冲突方式设为落点时，还可以简化计算炮落点冲突，
-    // 但是这样会增加收集物干扰发炮的风险
+    PaoOperator pao_list;
 
-    ///////////////////// 模式 2 : 不限制炮序
-    // 当不限制炮序时，tryPao 系列炮可以使用，fixPao 可以铲种炮列表内的炮
-    // 但是如果解决冲突方式为收集物时， tryPao 还是有可能找不到合适的炮发射
-    // 所以当不限制炮序时，我们最好将解决冲突方式设为落点，
-    // 这样 tryPao 就绝对可以找到合适的炮发射，虽然这样会增加收集物干扰发炮的风险
-    // 但是这样可以极大的简化我们的编写工作
+    /////////////////// 限制炮序  完全由我们自己排炮序
+    pao_list.setLimitPaoSequence(true);
+    pao_list.pao(2, 9);
+    pao_list.recoverPao(2, 9);
+    pao_list.setNextPao(3);
+    pao_list.skipPao(2);
+    pao_list.roofPao(2, 9);
+
+    /////////////////// 不限制炮序  由计算机帮助我们排炮序
+    pao_list.setLimitPaoSequence(true);
+    pao_list.tryPao(2, 9);
+    pao_list.tryFixPao();
+    pao_list.tryRoofPao(2, 9);
+
+    ///////////////////  一些不受模式设置限制的成员
+    pao_list.setResolveConflictType(PaoOperator::DROP_POINT);
+    pao_list.rawPao(1, 2, 2, 9);
+    pao_list.rawRoofPao(1, 2, 2, 9);
+    pao_list.resetPaoList({});
+    pao_list.changePaoMessage(1, 1, 1, 1);
+
+    /////////////////// 这个函数比较特殊，他的使用条件是不破坏炮序就行，因此两种模式下都可使用
+    pao_list.fixPao(3, 4);
 
     return 0;
 }
