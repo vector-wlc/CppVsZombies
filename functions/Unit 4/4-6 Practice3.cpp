@@ -65,7 +65,7 @@ int main()
     pao_col_in_5_and_7.setLimitPaoSequence(false);
 
     //setResolveConflictType 对所有对象均生效，所以只需要调用一次
-    pao_col_in_5_and_7.setResolveConflictType(PaoOperator::DROP_POINT);
+    PaoOperator::setResolveConflictType(PaoOperator::DROP_POINT);
 
     Card("hp", 2, 9);
 

@@ -21,7 +21,7 @@ int main()
     SetLimitPaoSequence(false);
     // 冲突解决方式为落点 在使用 tryPao 最好这样做
     SetResolveConflictType(PaoOperator::DROP_POINT);
-
+    
     for (wave = 1; wave < 21; wave++)
     {
         if (wave_in(1, 4, 7, 11, 14, 17))

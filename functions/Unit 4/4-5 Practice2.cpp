@@ -20,9 +20,9 @@ int main()
 {
     //选择寒冰菇，咖啡豆，花盆，樱桃炸弹，忧郁菇，香蒲，冰西瓜投手，吸金磁，地刺王，玉米加农炮
     SelectCards({{"hbg"}, {"kfd"}, {"hp"}, {"ytzd"}, {"yyg"}, {"xp"}, {"bxgts"}, {"xjc"}, {"dcw"}, {"ymjnp"}});
-    
+
     // 使用炮操作类必须把 CvZ 自带的炮操作对象内的所有炮清零
-    UpdatePaoList({}); 
+    UpdatePaoList({});
     // 为对象设定炮列表
     ground_pao.resetPaoList({{1, 6}, {2, 6}, {3, 6}, {4, 6}, {5, 6}});
     wind_pao.resetPaoList({{1, 1}, {2, 1}, {3, 1}, {4, 1}, {5, 1}});
@@ -71,5 +71,6 @@ int main()
             }
         }
     }
+    pvz::WaitGameEnd();
     return 0;
 }

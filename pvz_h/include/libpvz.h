@@ -721,11 +721,12 @@ private:
 	//记录炮的信息
 	struct PAO_MESSAGE
 	{
-		int row;				 //所在行
-		int col;				 //所在列
-		int recover_time;		 //恢复时间
-		int index;				 //炮的对象序列
-		bool is_in_list = false; //记录是否在炮列表内
+		int row;					 //所在行
+		int col;					 //所在列
+		int recover_time;			 //恢复时间
+		int index;					 //炮的对象序列
+		bool is_in_list = false;	 //记录是否在炮列表内
+		bool is_in_sequence = false; //记录该炮是否被炮序限制
 
 		//重载 ==
 		friend bool operator==(const PAO_MESSAGE &p1, const PAO_MESSAGE &p2)
@@ -765,38 +766,38 @@ private:
 		int fire_time;
 	};
 
+	//屋顶炮飞行时间辅助数据
+	struct FLY_TIME
+	{
+		int min_drop_x;   //记录该列炮最小飞行时间对应的最小的横坐标
+		int min_fly_time; //记录最小的飞行时间
+	};
+
 	static int conflict_resolution_type;	   //冲突解决方式
 	static std::vector<PAO_MESSAGE> all_pao;   //所有炮的信息
 	std::vector<pao_message_iterator> paolist; //炮列表，记录炮的迭代器信息
 	int nowpao;								   //记录当前即将发射的下一门炮
 	bool limit_pao_sequence = true;			   //是否限制炮序
 
-	//屋顶炮飞行时间辅助数据
-	struct
-	{
-		int min_drop_x;   //记录该列炮最小飞行时间对应的最小的横坐标
-		int min_fly_time; //记录最小的飞行时间
-	} roof_pao_fly_time[8]{
-		{515, 359}, {499, 362}, {515, 364}, {499, 367}, {515, 369}, {499, 372}, {511, 373}, {511, 373}}; //辅助排序函数
-
+	static const FLY_TIME roof_pao_fly_time[8];
 	//对炮进行一些检查
-	void pao_examine(pao_message_iterator it, int now_time, int drop_row, float drop_col);
+	static void pao_examine(pao_message_iterator it, int now_time, int drop_row, float drop_col);
 	//检查落点
-	bool is_drop_conflict(int pao_row, int pao_col, int drop_row, float drop_col);
+	static bool is_drop_conflict(int pao_row, int pao_col, int drop_row, float drop_col);
 	//基础发炮函数
-	void base_fire_pao(pao_message_iterator it, int now_time, int drop_row, float drop_col);
+	static void base_fire_pao(pao_message_iterator it, int now_time, int drop_row, float drop_col);
 	//获取屋顶炮飞行时间
-	int roof_fly_time(int pao_col, float drop_col);
+	static int roof_fly_time(int pao_col, float drop_col);
 	//基础屋顶修正时间发炮
-	void base_fire_roof_pao(pao_message_iterator it, int fire_time, int drop_row, float drop_col);
+	static void base_fire_roof_pao(pao_message_iterator it, int fire_time, int drop_row, float drop_col);
 	//用户自定义炮位置，屋顶修正时间发炮：多发
-	void base_fire_roof_paos(std::vector<RP> lst);
+	static void base_fire_roof_paos(std::vector<RP> lst);
 	//铲种炮
-	void shovel_and_plant_pao(int row, int col, int move_col, pao_message_iterator it, int delay_time);
-	//尝试铲种炮
-	void try_shovel_and_plant_pao();
+	static void shovel_and_plant_pao(int row, int col, int move_col, pao_message_iterator it, int delay_time);
 	//改变炮的信息
 	static void change_pao_message(pao_message_iterator it, int now_row, int now_col);
+	//尝试铲种炮
+	void try_shovel_and_plant_pao();
 
 public:
 	//冲突参数
@@ -811,19 +812,12 @@ public:
 	PaoOperator(bool initialize_paolist = true);
 	~PaoOperator();
 
+	//////////////////////////////////////////// 模式设定成员
+
 	//设置炮序限制 参数为 false 则解除炮序限制，true 则增加炮序限制
 	//解除此限制后 fixPao 可铲种炮列表内的炮，tryPao 系列可使用， Pao 系列不可使用
 	//增加此限制后 fixPao 不可铲种炮列表内的炮，tryPao 系列不可使用， Pao 系列可使用
-	void setLimitPaoSequence(bool limit) { limit_pao_sequence = limit; }
-
-	//设定解决冲突模式
-	//使用示例：
-	//setResolveConflictType(PaoOperator::DROP_POINT)---只解决落点冲突，不解决收集物点炮冲突
-	//setResolveConflictType(PaoOperator::COLLECTION)---只解决收集物点炮冲突，不解决落点冲突
-	static void setResolveConflictType(int type);
-
-	//得到炮的所有信息，此函数用户不能调用
-	static void getAllPaoMessage_userForbidden();
+	void setLimitPaoSequence(bool limit);
 
 	//改变炮的信息
 	//请在手动或使用基础函数例如 Card 改变炮的信息后立即使用此函数
@@ -832,6 +826,14 @@ public:
 	//changePaoMessage(2,3,2,4)--------手动位移铲种(2,3)位置的炮后，更改相关炮的信息
 	//changePaoMessage(0,0,2,3)--------手动增加(2,3)位置的炮后，更改相关炮的信息
 	static void changePaoMessage(int origin_row, int origin_col, int now_row, int now_col);
+
+	//设定解决冲突模式
+	//使用示例：
+	//setResolveConflictType(PaoOperator::DROP_POINT)---只解决落点冲突，不解决收集物点炮冲突
+	//setResolveConflictType(PaoOperator::COLLECTION)---只解决收集物点炮冲突，不解决落点冲突
+	static void setResolveConflictType(int type);
+
+	/////////////////////////////////////////// 下面是关于限制炮序的相关成员
 
 	//设置即将发射的下一门炮
 	//此函数只有在限制炮序的时候才可调用
@@ -845,30 +847,14 @@ public:
 	//setNextPao(2, 8)------将炮列表中位于 (2, 8) 的炮设置为下一门即将发射的炮
 	void setNextPao(int row, int col);
 
-	//重置炮列表
-	void resetPaoList(const std::vector<GRID> lst);
-	void resetPaoList();
-
 	//跳过一定数量的炮
 	void skipPao(int x);
-
-	//用户自定义炮位置发炮：单发
-	void rawPao(int pao_row, int pao_col, int drop_row, float drop_col);
-
-	//用户自定义炮位置发炮：多发
-	void rawPao(const std::vector<RAWPAO> &lst);
 
 	//发炮函数：单发
 	void pao(int row, float col);
 
 	//发炮函数：多发
 	void pao(std::initializer_list<PAO> lst);
-
-	//尝试发炮：单发
-	bool tryPao(int row, float col);
-
-	//尝试发炮：多发
-	bool tryPao(const std::vector<PAO> lst);
 
 	//等待炮恢复立即用炮：单发
 	void recoverPao(int row, float col);
@@ -882,23 +868,45 @@ public:
 	//屋顶修正时间发炮：多发
 	void roofPao(std::initializer_list<PAO> lst);
 
+	//////////////////////////////////////// 下面是不限制炮序能够使用的成员
+
+	//尝试发炮：单发
+	bool tryPao(int row, float col);
+
+	//尝试发炮：多发
+	bool tryPao(const std::vector<PAO> lst);
+
 	//屋顶修正时间发炮：单发
 	bool tryRoofPao(int row, float col);
 
 	//屋顶修正时间发炮：多发
 	bool tryRoofPao(std::initializer_list<PAO> lst);
 
-	//屋顶修正时间发炮，单发
-	void rawRoofPao(int pao_row, int pao_col, int drop_row, float drop_col);
-
-	//屋顶修正时间发炮 多发
-	void rawRoofPao(const std::vector<RAWPAO> &lst);
-
-	//铲种炮
-	void fixPao(int row, int col, int move_col = 0, int delay_time = 0);
-
 	//尝试铲种炮
 	void tryFixPao();
+
+	////////////////////////////////// 下面是不受模式限制使用的成员
+	//重置炮列表
+	void resetPaoList(const std::vector<GRID> lst);
+	void resetPaoList();
+
+	//屋顶修正时间发炮，单发
+	static void rawRoofPao(int pao_row, int pao_col, int drop_row, float drop_col);
+
+	//屋顶修正时间发炮 多发
+	static void rawRoofPao(const std::vector<RAWPAO> &lst);
+
+	//铲种炮
+	static void fixPao(int row, int col, int move_col = 0, int delay_time = 0);
+
+	//用户自定义炮位置发炮：单发
+	static void rawPao(int pao_row, int pao_col, int drop_row, float drop_col);
+
+	//用户自定义炮位置发炮：多发
+	static void rawPao(const std::vector<RAWPAO> &lst);
+
+	//得到炮的所有信息，此函数用户不能调用
+	static void getAllPaoMessage_userForbidden();
 };
 
 //CvZ自定义炮类对象
