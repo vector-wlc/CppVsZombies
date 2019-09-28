@@ -28,7 +28,7 @@ int ICE3()
     //输出波数以帮助调整时间
     printf("%d\n", wave);
     //调整每波 ICE3 的时间
-    if (wave_in(4, 6, 12, 13, 16))
+    if (wave_in(4, 6, 13, 16))
         return 211;
     return 210;
 }
@@ -225,7 +225,7 @@ int main()
 
     //############# wave 16 ##################
     Prejudge(410 - 387, 16);
-    MyRoofPao(9, 8.8);
+    MyRoofPao(9, 9);
     Until(410 + 220 - 387);
     MyRoofPao(8.45, 8.45);
     Until(1200 - 387);
@@ -260,7 +260,7 @@ int main()
     Prejudge(900 - 387, 19);
     MyRoofPao(9, 9);
     Until(1070 - 387);
-    MyRoofPao(8.9, 8.9);
+    MyRoofPao(9, 9);
     Until(1290 - 387);
     MyRoofPao(9, 9);
     Until(2376 - 387);
@@ -275,6 +275,6 @@ int main()
     MyRoofPao(9, 9);
 
     pvz::WaitGameEnd(); // 等待游戏结束再退出 main
-    
+
     return 0;
 }
