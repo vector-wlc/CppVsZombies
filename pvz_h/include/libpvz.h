@@ -715,6 +715,7 @@ void Card(std::initializer_list<CARD_NAME> lst);
 //Card({{"ytzd",2,3},{"Mhblj",3,4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
 void Card(const std::string &card_name, std::initializer_list<CARD> lst);
 
+// 炮操作类
 class PaoOperator
 {
 private:
@@ -819,20 +820,6 @@ public:
 	//增加此限制后 fixPao 不可铲种炮列表内的炮，tryPao 系列不可使用， Pao 系列可使用
 	void setLimitPaoSequence(bool limit);
 
-	//改变炮的信息
-	//请在手动或使用基础函数例如 Card 改变炮的信息后立即使用此函数
-	//使用示例：
-	//changePaoMessage(2,3,2,3)--------在手动铲种(2,3)位置的炮后，更改相关炮的信息
-	//changePaoMessage(2,3,2,4)--------手动位移铲种(2,3)位置的炮后，更改相关炮的信息
-	//changePaoMessage(0,0,2,3)--------手动增加(2,3)位置的炮后，更改相关炮的信息
-	static void changePaoMessage(int origin_row, int origin_col, int now_row, int now_col);
-
-	//设定解决冲突模式
-	//使用示例：
-	//setResolveConflictType(PaoOperator::DROP_POINT)---只解决落点冲突，不解决收集物点炮冲突
-	//setResolveConflictType(PaoOperator::COLLECTION)---只解决收集物点炮冲突，不解决落点冲突
-	static void setResolveConflictType(int type);
-
 	/////////////////////////////////////////// 下面是关于限制炮序的相关成员
 
 	//设置即将发射的下一门炮
@@ -886,9 +873,24 @@ public:
 	void tryFixPao();
 
 	////////////////////////////////// 下面是不受模式限制使用的成员
+
 	//重置炮列表
 	void resetPaoList(const std::vector<GRID> lst);
 	void resetPaoList();
+
+	//改变炮的信息
+	//请在手动或使用基础函数例如 Card 改变炮的信息后立即使用此函数
+	//使用示例：
+	//changePaoMessage(2,3,2,3)--------在手动铲种(2,3)位置的炮后，更改相关炮的信息
+	//changePaoMessage(2,3,2,4)--------手动位移铲种(2,3)位置的炮后，更改相关炮的信息
+	//changePaoMessage(0,0,2,3)--------手动增加(2,3)位置的炮后，更改相关炮的信息
+	static void changePaoMessage(int origin_row, int origin_col, int now_row, int now_col);
+
+	//设定解决冲突模式
+	//使用示例：
+	//setResolveConflictType(PaoOperator::DROP_POINT)---只解决落点冲突，不解决收集物点炮冲突
+	//setResolveConflictType(PaoOperator::COLLECTION)---只解决收集物点炮冲突，不解决落点冲突
+	static void setResolveConflictType(int type);
 
 	//屋顶修正时间发炮，单发
 	static void rawRoofPao(int pao_row, int pao_col, int drop_row, float drop_col);
@@ -914,20 +916,25 @@ extern PaoOperator pao_cvz;
 
 // ################# auto thread ########################
 
+//使函数在子线程中运行
+template <class FP, class... Args>
+void RunningInThread(FP fp, Args... args)
+{
+	std::thread task(fp, args...);
+	task.detach();
+}
+
 //自动操作线程基类的基类 =_=
 class BaseBaseAutoThread
 {
 protected:
 	bool pause_;		   //暂停，线程仍在运行
 	bool stop_;			   //停止，线程不再运行
+	int interval_;		   //检测间隔
 	void error_messages(); //错误信息
 
 public:
-	BaseBaseAutoThread()
-	{
-		pause_ = false;
-		stop_ = true;
-	}
+	BaseBaseAutoThread() : pause_(false), stop_(true), interval_(100) {}
 	virtual ~BaseBaseAutoThread() {}
 	//调用此函数使得线程停止运行
 	void stop() { stop_ = true; }
@@ -935,6 +942,8 @@ public:
 	void pause() { pause_ = true; }
 	//调用此函数使得线程继续运行
 	void goOn() { pause_ = false; }
+	//调用此函数改变检测间隔
+	void setInterval(int interval) { interval_ = interval; }
 };
 
 //自动操作函数基类
@@ -1152,11 +1161,17 @@ public:
 //resetZombieTypeList：重置需要垫的僵尸
 extern PlaceDianCai dian_cai_placer;
 
-//开始自动收集
-void StartAutoCollectThread();
+class CollectItem : public BaseBaseAutoThread
+{
+public:
+	CollectItem();
+	void start();
 
-//停止自动收集
-void StopAutoCollectThread();
+private:
+	void start_auto_collect();
+};
+
+extern CollectItem item_collector;
 
 // ########################  mode select #################
 
@@ -1174,6 +1189,30 @@ void StartReprint();
 
 //在调用此函数处结束重复打印
 void EndReprint();
+
+// ########################  assist functions #################
+
+//如果波数在参数范围内
+template <class... Args>
+bool wave_in(Args... args)
+{
+	std::initializer_list<int> lst = {args...};
+	for (auto e : lst)
+		if (e == wave)
+			return true;
+	return false;
+}
+
+//如果波数在不参数范围内
+template <class... Args>
+bool wave_not_in(Args... args)
+{
+	std::initializer_list<int> lst = {args...};
+	for (auto e : lst)
+		if (e == wave)
+			return false;
+	return true;
+}
 
 } // namespace pvz
 

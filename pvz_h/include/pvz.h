@@ -14,56 +14,28 @@
 
 #include "libpvz.h"
 
-using pvz::CancelAutoExit;		   //取消自动退出机制
-using pvz::Card;				   //用卡
-using pvz::Delay;				   //时间延迟
-using pvz::dian_cai_placer;		   //放置垫材对象
-using pvz::FixNut;				   //修补坚果类
-using pvz::ice_filler;			   //存冰对象
-using pvz::KeyConnect;			   //键盘指定操作
-using pvz::KeyDown;				   //检测键盘是否按下
-using pvz::nut_fixer;			   //修补坚果对象
-using pvz::nv_pu_mi_ji;			   //女仆秘籍对象
-using pvz::OpenExamine;			   //开启检查
-using pvz::OpenHighPrecision;	  //开启高精度
-using pvz::PaoOperator;			   //炮操作类
-using pvz::Prejudge;			   //时间预判
-using pvz::SelectCards;			   //选卡
-using pvz::Shovel;				   //铲除
-using pvz::StartAutoCollectThread; //自动收集
-using pvz::StopAutoCollectThread;  //停止自动收集
-using pvz::Until;				   //等待时间到
-using pvz::wave;				   //波数
-
-//如果波数在参数范围内
-template <class... Args>
-bool wave_in(Args... args)
-{
-	std::initializer_list<int> lst = {args...};
-	for (auto e : lst)
-		if (e == wave)
-			return true;
-	return false;
-}
-
-//如果波数在不参数范围内
-template <class... Args>
-bool wave_not_in(Args... args)
-{
-	std::initializer_list<int> lst = {args...};
-	for (auto e : lst)
-		if (e == wave)
-			return false;
-	return true;
-}
-
-//使函数在子线程中运行
-template <class FP, class... Args>
-void RunningInThread(FP fp, Args... args)
-{
-	std::thread task(fp, args...);
-	task.detach();
-}
+using pvz::CancelAutoExit;	//取消自动退出机制
+using pvz::Card;			  //用卡
+using pvz::Delay;			  //时间延迟
+using pvz::dian_cai_placer;   //放置垫材对象
+using pvz::FixNut;			  //修补坚果类
+using pvz::ice_filler;		  //存冰对象
+using pvz::item_collector;	//自动收集
+using pvz::KeyConnect;		  //键盘指定操作
+using pvz::KeyDown;			  //检测键盘是否按下
+using pvz::nut_fixer;		  //修补坚果对象
+using pvz::nv_pu_mi_ji;		  //女仆秘籍对象
+using pvz::OpenExamine;		  //开启检查
+using pvz::OpenHighPrecision; //开启高精度
+using pvz::PaoOperator;		  //炮操作类
+using pvz::Prejudge;		  //时间预判
+using pvz::RunningInThread;   //创建子线程
+using pvz::SelectCards;		  //选卡
+using pvz::Shovel;			  //铲除
+using pvz::Until;			  //等待时间到
+using pvz::wave;			  //波数
+using pvz::wave_in;			  // 波数判定
+using pvz::wave_not_in;		  //波数判定
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //以下函数是为了兼容 CvZ 之前的版本，现已不推荐使用
@@ -163,7 +135,6 @@ void RunningInThread(FP fp, Args... args)
 //FixPao()------------尝试铲种即将发射的下一门炮，该函数不支持位移铲种，也不支持延迟时间，因为没有意义
 #define TryFixPao pvz::pao_cvz.tryFixPao
 
-
 //自动存冰函数，该函数可以自动补荷叶
 //使用示例：
 //StartAutoFillIceThread({{1,3},{2,3}})--------------在1行3列，2行3列存冰
@@ -206,5 +177,11 @@ void RunningInThread(FP fp, Args... args)
 
 //强制退出修坚果线程
 #define StopAutoFixNutThread pvz::nut_fixer.stop
+
+//开启自动收集
+#define StartAutoCollectThread pvz::item_collector.start
+
+//关闭自动收集
+#define StopAutoCollectThread pvz::item_collector.stop
 
 #endif //PVZ_H
