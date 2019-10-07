@@ -7,6 +7,7 @@
 
 int main()
 {
+    OpenExamine(pvz::CVZ_NO);
     // 选择寒冰菇 模仿寒冰菇 咖啡豆 窝瓜 樱桃 毁灭菇 荷叶 南瓜头 三叶草 小喷菇
     SelectCards({{"hbg"}, {"Mhbg"}, {"kfd"}, {"wg"}, {"ytzd"}, {"hmg"}, {"hy"}, {"ngt"}, {"syc"}, {"xpg"}});
 
