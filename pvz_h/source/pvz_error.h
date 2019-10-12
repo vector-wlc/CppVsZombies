@@ -18,10 +18,10 @@ void UTF8ToGBK(std::string &strUTF8);
 
 #endif
 
-inline void SetColor(unsigned short forecolor = 40, unsigned short backgroudcolor = 30)
+inline void SetColor(unsigned short forecolor, unsigned short backgroudcolor)
 {
-    HANDLE hCon = GetStdHandle(STD_OUTPUT_HANDLE);             //获取缓冲区句柄
-    SetConsoleTextAttribute(hCon, forecolor | backgroudcolor); //设置文本及背景色
+    HANDLE hCon = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hCon, forecolor | backgroudcolor);
 }
 
 //弹出异常，提示错误信息
@@ -29,7 +29,7 @@ template <typename... Args>
 void PrintError(const std::string &content, Args... args)
 {
 
-    std::string error_content = content;
+    std::string error_content = "wave %d : " + content + "\n\n";
 
 #ifndef GBK
 
@@ -37,11 +37,11 @@ void PrintError(const std::string &content, Args... args)
 
 #endif
 
-    SetColor();
+    SetColor(30, 40);
     g_mu.lock();
-    std::printf(error_content.c_str(), args...);
-    std::printf("\n");
+    std::printf(error_content.c_str(), wave, args...);
     g_mu.unlock();
+    SetColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE, 0);
 
     //暂停游戏
     PostMessage(g_hwnd, WM_KEYDOWN, VK_SPACE, 0);

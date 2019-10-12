@@ -788,6 +788,7 @@ inline bool KeyDown(int key)
 
 //键盘控制操作
 //keyConnect('Q', [&](){ Pao(2, 9);}) 按下Q就炮击(2, 9)
+//使用此函数时请在 main 函数结尾时尽量使用 pvz::WaitGameEnd()
 void KeyConnect(char key, const std::function<void()> &operate);
 
 //选择卡片用来战斗

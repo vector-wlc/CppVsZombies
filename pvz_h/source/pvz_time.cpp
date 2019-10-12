@@ -59,10 +59,10 @@ void Prejudge(int t, int w)
     }
 
     else
-        PrintError("wave %d，Prejudge无法预判出僵尸刷新时间戳，请调整其他时间函数的使用", wave);
+        PrintError("Prejudge无法预判出僵尸刷新时间戳，请调整其他时间函数的使用");
     //如果时间已超过预定时间戳
     if ((GameClock() - zombie_refresh_time) > t)
-        PrintError("wave %d，预判的时间为 %d，现在的时间已到 %d，请检查其他函数的使用", wave, t, GameClock() - zombie_refresh_time);
+        PrintError("预判的时间为 %d，现在的时间已到 %d，请检查其他函数的使用", t, GameClock() - zombie_refresh_time);
 
     if (g_examine_level == CVZ_INFO)
     {
@@ -96,7 +96,7 @@ void Delay(int time)
                 Sleep(1);
     }
     else
-        PrintError("wave %d，Delay函数参数不能为负数,当前的参数为 %d", wave, time);
+        PrintError("Delay函数参数不能为负数,当前的参数为 %d", time);
 }
 
 //等待时间到
@@ -104,8 +104,8 @@ void Until(int time)
 {
 
     if ((GameClock() - zombie_refresh_time) > time)
-        PrintError("wave %d，Until目标时间戳为 %d，现在的时间已到 %d，请检查其他函数的使用",
-                   wave, time, GameClock() - zombie_refresh_time);
+        PrintError("Until目标时间戳为 %d，现在的时间已到 %d，请检查其他函数的使用",
+                   time, GameClock() - zombie_refresh_time);
     if (g_examine_level == CVZ_INFO)
     {
         g_mu.lock();
