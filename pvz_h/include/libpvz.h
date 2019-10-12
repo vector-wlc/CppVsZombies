@@ -931,7 +931,7 @@ private:
 	//铲种炮
 	static void shovel_and_plant_pao(int row, int col, int move_col, PaoIterator it, int delay_time);
 	//改变炮的信息
-	static void change_pao_message(PaoIterator *it, int now_row, int now_col);
+	static void change_pao_message(PaoIterator it, int now_row, int now_col);
 
 public:
 	//冲突参数

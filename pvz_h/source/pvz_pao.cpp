@@ -73,6 +73,7 @@ PaoOperator::~PaoOperator()
     for (const auto &e : paolist)
     {
         e->second.is_in_list = false;
+        e->second.is_in_sequence = false;
     }
 }
 
@@ -86,19 +87,19 @@ void PaoOperator::setResolveConflictType(int type)
         WriteMemory<short>(30, 0x4663F9);
 }
 
-void PaoOperator::change_pao_message(PaoIterator *change_pao, int now_row, int now_col)
+void PaoOperator::change_pao_message(PaoIterator change_pao, int now_row, int now_col)
 {
     PlantMemory cannon;
     int cannon_status = 0;
     std::pair<GRID, PAO_INFO> new_pao;
 
-    bool is_shovel_and_plant_pao = (*change_pao != all_pao.end());
+    bool is_shovel_and_plant_pao = (change_pao != all_pao.end());
 
     //如果是铲种炮
     if (is_shovel_and_plant_pao)
     {
-        new_pao = *(*change_pao);
-        all_pao.erase(*change_pao);
+        new_pao = *change_pao;
+        all_pao.erase(change_pao);
     }
 
     Sleep(20);
@@ -121,10 +122,6 @@ void PaoOperator::change_pao_message(PaoIterator *change_pao, int now_row, int n
     new_pao.first.col = now_col;
 
     all_pao.insert(new_pao);
-
-    //更新炮列表
-    if (is_shovel_and_plant_pao)
-        *change_pao = all_pao.find(new_pao.first);
 }
 
 void PaoOperator::setLimitPaoSequence(bool limit)
@@ -145,7 +142,7 @@ void PaoOperator::changePaoMessage(int origin_row, int origin_col, int now_row, 
     if (origin_row != 0 && origin_col != 0 && change_pao == all_pao.end())
         PrintError("请检查原来位置 (%d, %d) 是否为炮", origin_row, origin_col);
 
-    RunningInThread(change_pao_message, &change_pao, now_row, now_col);
+    RunningInThread(change_pao_message, change_pao, now_row, now_col);
 }
 
 //自动识别炮列表
@@ -155,6 +152,7 @@ void PaoOperator::resetPaoList()
     for (const auto &e : paolist)
     {
         e->second.is_in_list = false;
+        e->second.is_in_sequence = false;
     }
 
     //重置炮列表
@@ -193,6 +191,7 @@ void PaoOperator::resetPaoList(const std::vector<GRID> &lst)
     for (const auto &e : paolist)
     {
         e->second.is_in_list = false;
+        e->second.is_in_sequence = false;
     }
 
     //重置炮列表
@@ -758,7 +757,7 @@ void PaoOperator::shovel_and_plant_pao(int row, int col, int move_col, PaoIterat
     Card(ymjnp, row, col + move_col);
 
     //更新相关炮的信息
-    change_pao_message(&it, row, col + move_col);
+    change_pao_message(it, row, col + move_col);
 }
 
 void PaoOperator::fixPao(int row, int col, int move_col, int delay_time)

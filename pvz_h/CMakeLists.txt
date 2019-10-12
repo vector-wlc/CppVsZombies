@@ -12,4 +12,4 @@ aux_source_directory(./source scrs)
 
 add_library(pvz ${scrs})
 
-# add_executable(test ${scrs})
+#add_executable(test ${scrs})

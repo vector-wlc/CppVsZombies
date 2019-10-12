@@ -609,7 +609,7 @@ void CollectItem::start_auto_collect() const
 					LeftClick(y, x);
 					RightClick(1, 1);
 					g_mu.unlock();
-					Sleep(100);
+					Sleep(interval_);
 				}
 			}
 		}
