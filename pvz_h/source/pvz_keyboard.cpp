@@ -26,7 +26,7 @@ void KeyConnect(char key, const std::function<void()> &operate)
 
     for (const auto &key_operation : key_operations)
         if (key_operation.first == key)
-            PrintError("错误", "按键 # 绑定了多个操作", char(key));
+            PrintError("按键 %c 绑定了多个操作", key);
 
     key_operations.push_back(std::pair<char, std::function<void()>>(key, operate));
 

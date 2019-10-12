@@ -8,7 +8,7 @@ namespace pvz
 {
 void BaseBaseAutoThread::error_messages()
 {
-	PrintError("错误", "自动操作类不允许一个对象创建多个线程");
+	PrintError("自动操作类不允许一个对象创建多个线程");
 }
 
 BaseAutoThread::BaseAutoThread() : BaseBaseAutoThread() {}
@@ -27,7 +27,7 @@ void BaseAutoThread::base_reset_list(const std::vector<GRID> &lst)
 				(e.row == 3 || e.row == 4))
 				//如果没有选择荷叶卡片且需要荷叶
 				if (leaf_seed_index == -1 && GetPlantIndex(e.row, e.col, 16) == -1 && GetPlantIndex(e.row, e.col, 43) == -1)
-					PrintError("错误", "您没有选择荷叶卡片，(#, #)需要荷叶", e.row, e.col);
+					PrintError("您没有选择荷叶卡片，(%d, %d)需要荷叶", e.row, e.col);
 			grid_lst.push_back(e);
 		}
 	}
@@ -127,9 +127,9 @@ void FillIce::use_ice()
 void FillIce::coffee() const
 {
 	if (grid_lst.size() == 0)
-		PrintError("警告", "存冰列表未初始化！");
+		PrintError("存冰列表未初始化！");
 	else if (coffee_index == -1)
-		PrintError("警告", "您没有选择咖啡豆卡片!");
+		PrintError("您没有选择咖啡豆卡片!");
 	else
 	{
 		g_mu.lock();
@@ -154,7 +154,7 @@ void FixNut::start(int nut_type, const std::vector<GRID> &lst, int fix_hp)
 		pause_ = false;
 		stop_ = false;
 		if (nut_type != 3 && nut_type != 23 && nut_type != 30)
-			PrintError("警告", "维修坚果类只能用于维修坚果类植物");
+			PrintError("维修坚果类只能用于维修坚果类植物");
 		//得到对应类型的坚果卡片对象序列
 		nut_seed_index = GetSeedIndex(nut_type);
 		//获得荷叶卡片的对象序列
@@ -162,7 +162,7 @@ void FixNut::start(int nut_type, const std::vector<GRID> &lst, int fix_hp)
 		nut_type_ = nut_type;
 
 		if (nut_seed_index == -1)
-			PrintError("错误", "您没有选择对应的坚果卡片");
+			PrintError("您没有选择对应的坚果卡片");
 
 		//如果用户没有给出列表信息
 		if (lst.size() == 0)
@@ -186,7 +186,7 @@ void FixNut::start(int nut_type, const std::vector<GRID> &lst, int fix_hp)
 							(fix_grid.row == 3 || fix_grid.row == 4))
 							//如果没有选择荷叶卡片且需要荷叶
 							if (leaf_seed_index == -1 && GetPlantIndex(fix_grid.row, fix_grid.col, 16) == -1 && GetPlantIndex(fix_grid.row, fix_grid.col, 43) == -1)
-								PrintError("错误", "您没有选择荷叶卡片，(#, #)需要荷叶", fix_grid.row, fix_grid.col);
+								PrintError("您没有选择荷叶卡片，(%d, %d)需要荷叶", fix_grid.row, fix_grid.col);
 					}
 					grid_lst.push_back(fix_grid);
 				}

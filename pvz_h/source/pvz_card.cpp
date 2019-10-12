@@ -92,7 +92,7 @@ void SelectCards(const std::vector<SEED_INDEX> &lst)
         SeedMemory seed;
         int slots_count = seed.slotsCount();
         if (slots_count != lst.size())
-            PrintError("错误", "选择的卡片数目与卡槽位数目不符");
+            PrintError("选择的卡片数目与卡槽位数目不符");
         //开始选卡
         while (1)
         {
@@ -136,7 +136,7 @@ void SelectCards(const std::vector<SEED_NAME> &lst)
         {
             //如果i超过边界
             if (seed_lst[i].row > 10)
-                PrintError("错误", "SelectCards第 # 个卡片的名称'#'未被录入，请参考pvz_data.h的卡片命名", i, e.seed_name);
+                PrintError("SelectCards第 %d 个卡片的名称'%s'未被录入，请参考pvz_data.h的卡片命名", i, e.seed_name.c_str());
             for (seed_lst[i].col = 0; seed_lst[i].col < 8; seed_lst[i].col++)
             {
                 if (e.seed_name == seed_name[seed_lst[i].row][seed_lst[i].col])
@@ -177,7 +177,7 @@ void Card(int x, int row, float col)
         SeedMemory seed(x - 1);
         int seed_CD = seed.CD();
         if (seed_CD)
-            PrintError("警告", "第 # 张卡片还有 #cs 才能使用", x, seed.initialCD() - seed_CD);
+            PrintError("第 %d 张卡片还有 %dcs 才能使用", x, seed.initialCD() - seed_CD);
     }
 
     g_mu.lock();
@@ -205,7 +205,7 @@ void Card(int x, const std::vector<CARD> &lst)
         SeedMemory seed(x - 1);
         int seed_CD = seed.CD();
         if (seed_CD)
-            PrintError("警告", "第 # 张卡片还有 #cs 才能使用", x, seed.initialCD() - seed_CD);
+            PrintError("第 %d 张卡片还有 %dcs 才能使用", x, seed.initialCD() - seed_CD);
     }
 
     g_mu.lock();
@@ -269,7 +269,7 @@ void Card(const std::string &card_name, int row, float col)
 
     auto it = seed_name_to_index.find(card_name);
     if (it == seed_name_to_index.end())
-        PrintError("错误", "卡片名称'#'未被录入pvz.h,或者您没有选择该卡片", card_name);
+        PrintError("卡片名称'%s'未被录入pvz.h,或者您没有选择该卡片", card_name.c_str());
 
     Card(it->second + 1, row, col);
 }
@@ -292,7 +292,7 @@ void Card(const std::string &card_name, const std::vector<CARD> &lst)
 
     auto it = seed_name_to_index.find(card_name);
     if (it == seed_name_to_index.end())
-        PrintError("错误", "卡片名称'#'未被录入pvz.h,或者您没有选择该卡片", card_name);
+        PrintError("卡片名称'%s'未被录入pvz.h,或者您没有选择该卡片", card_name.c_str());
 
     //用卡
     Card(it->second + 1, lst);

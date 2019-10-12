@@ -6,7 +6,6 @@
 
 #include <mutex>
 #include <windows.h>
-#include <vector>
 
 namespace pvz
 {

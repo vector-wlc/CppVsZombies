@@ -10,22 +10,6 @@
 
 namespace pvz
 {
-//完成内容转换
-template <typename T>
-int TransContent(std::string &content, T trans)
-{
-    auto replace = content.find_first_of("#");
-    //如果字符串中无"#"则退出此函数
-    if (replace == std::string::npos)
-        return 0;
-
-    //进行数字到字符串的转化
-    std::stringstream s;
-    s << trans;
-    //将"#"替换成相应的内容
-    content.replace(replace, 1, s.str());
-    return 1;
-}
 
 #ifndef GBK
 
@@ -42,24 +26,21 @@ inline void SetColor(unsigned short forecolor = 40, unsigned short backgroudcolo
 
 //弹出异常，提示错误信息
 template <typename... Args>
-void PrintError(const std::string &title, const std::string &content, Args... args)
+void PrintError(const std::string &content, Args... args)
 {
 
     std::string error_content = content;
-    //字符串内容更换，利用逗号表达式将参数包展开
-    std::initializer_list<int>{(TransContent(error_content, args), 0)...};
-    std::string error_title = title;
 
 #ifndef GBK
 
-    UTF8ToGBK(error_title);
     UTF8ToGBK(error_content);
 
 #endif
 
-    g_mu.lock();
     SetColor();
-    std::printf("%s : %s\n\n", error_title.c_str(), error_content.c_str());
+    g_mu.lock();
+    std::printf(error_content.c_str(), args...);
+    std::printf("\n");
     g_mu.unlock();
 
     //暂停游戏

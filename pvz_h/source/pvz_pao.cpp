@@ -16,7 +16,7 @@ void PaoOperator::getAllPaoMessage_userForbidden()
 {
     static bool forbidden = false;
     if (forbidden)
-        PrintError("错误", "用户不允许调用 getAllPaoMessage_userForbidden");
+        PrintError("用户不允许调用 getAllPaoMessage_userForbidden");
     forbidden = true;
 
     PlantMemory cannon;
@@ -104,7 +104,7 @@ void PaoOperator::change_pao_message(PaoIterator *change_pao, int now_row, int n
     Sleep(20);
     new_pao.second.index = GetPlantIndex(now_row, now_col, 47);
     if (new_pao.second.index == -1)
-        PrintError("错误", "请检查 (#, #) 是否为炮", now_row, now_col);
+        PrintError("请检查 (%d, %d) 是否为炮", now_row, now_col);
 
     int now_time = GameClock();
     cannon.setIndex(new_pao.second.index);
@@ -143,7 +143,7 @@ void PaoOperator::changePaoMessage(int origin_row, int origin_col, int now_row, 
     auto change_pao = all_pao.find(GRID(origin_row, origin_col));
     //参数为 0 是偷炮
     if (origin_row != 0 && origin_col != 0 && change_pao == all_pao.end())
-        PrintError("错误", "请检查原来位置 (#, #) 是否为炮", origin_row, origin_col);
+        PrintError("请检查原来位置 (%d, %d) 是否为炮", origin_row, origin_col);
 
     RunningInThread(change_pao_message, &change_pao, now_row, now_col);
 }
@@ -203,11 +203,11 @@ void PaoOperator::resetPaoList(const std::vector<GRID> &lst)
         //在总炮信息里面找不到则报错
         it = all_pao.find(pao_grid);
         if (it == all_pao.end())
-            PrintError("错误", "请检查 [#, #] 是否为炮", pao_grid.row, pao_grid.col);
+            PrintError("请检查 (%d, %d) 是否为炮", pao_grid.row, pao_grid.col);
 
         //如果此炮在其它炮列表中
         if (it->second.is_in_list)
-            PrintError("错误", "[#, #] 在其它炮列表中", pao_grid.row, pao_grid.col);
+            PrintError("(%d, %d) 在其它炮列表中", pao_grid.row, pao_grid.col);
 
         it->second.is_in_list = true;
         it->second.is_in_sequence = limit_pao_sequence;
@@ -219,7 +219,7 @@ void PaoOperator::resetPaoList(const std::vector<GRID> &lst)
 void PaoOperator::setNextPao(int next_pao)
 {
     if (next_pao > paolist.size())
-        PrintError("警告", "本炮列表中一共有 # 门炮，您设的参数已溢出", paolist.size());
+        PrintError("本炮列表中一共有 %d 门炮，您设的参数已溢出", paolist.size());
     nowpao = next_pao - 1;
 }
 
@@ -236,7 +236,7 @@ void PaoOperator::setNextPao(int row, int col)
         next_pao++;
     }
 
-    PrintError("错误", "请检查(#, #)是否在本炮列表中", row, col);
+    PrintError("请检查(%d, %d)是否在本炮列表中", row, col);
 }
 
 //对炮落点进行一些检查
@@ -285,10 +285,10 @@ void PaoOperator::pao_examine(PaoIterator it, int now_time, int drop_row, float 
 {
     if (conflict_resolution_type == COLLECTION &&
         is_drop_conflict(it->first.row, it->first.col, drop_row, drop_col))
-        PrintError("警告", "位于 (#，#) 的炮与落点(#，#)冲突", it->first.row, it->first.col, drop_row, drop_col);
+        PrintError("位于 (%d，%d) 的炮与落点(%d，%f)冲突", it->first.row, it->first.col, drop_row, drop_col);
 
     if (it->second.recover_time > now_time)
-        PrintError("错误", "位于 (#, #) 的炮还有 #cs 恢复", it->first.row, it->first.col, it->second.recover_time - now_time);
+        PrintError("位于 (%d, %d) 的炮还有 %dcs 恢复", it->first.row, it->first.col, it->second.recover_time - now_time);
 }
 
 void PaoOperator::base_fire_pao(PaoIterator it, int now_time, int drop_row, float drop_col)
@@ -326,7 +326,7 @@ void PaoOperator::rawPao(int pao_row, int pao_col, int drop_row, float drop_col)
     auto it = all_pao.find(GRID(pao_row, pao_col));
 
     if (it == all_pao.end())
-        PrintError("错误", "请检查 (#, #) 是否为炮", pao_row, pao_col);
+        PrintError("请检查 (%d, %d) 是否为炮", pao_row, pao_col);
 
     if (g_examine_level != CVZ_NO)
         pao_examine(it, now_time, drop_row, drop_col);
@@ -345,7 +345,7 @@ void PaoOperator::rawPao(const std::vector<RAWPAO> &lst)
         it = all_pao.find(GRID(e.pao_row, e.pao_col));
 
         if (it == all_pao.end())
-            PrintError("错误", "请检查 (#, #) 是否为炮", e.pao_row, e.pao_col);
+            PrintError("请检查 (%d, %d) 是否为炮", e.pao_row, e.pao_col);
 
         if (g_examine_level != CVZ_NO)
             pao_examine(it, now_time, e.drop_row, e.drop_col);
@@ -359,7 +359,7 @@ void PaoOperator::pao(int row, float col)
 {
     int now_time = GameClock();
     if (!limit_pao_sequence)
-        PrintError("错误", "解除炮序限制，Pao系列函数不可使用！");
+        PrintError("解除炮序限制，Pao系列函数不可使用！");
     //防止多线程读取pvz::nowpao竞争
     g_mu.lock();
     int next_pao = nowpao;
@@ -377,7 +377,7 @@ void PaoOperator::pao(const std::vector<PAO> &lst)
 {
     int now_time = GameClock();
     if (!limit_pao_sequence)
-        PrintError("错误", "解除炮序限制，Pao系列函数不可使用！");
+        PrintError("解除炮序限制，Pao系列函数不可使用！");
 
     g_mu.lock();
     int next_pao = nowpao;
@@ -396,7 +396,7 @@ void PaoOperator::pao(const std::vector<PAO> &lst)
 bool PaoOperator::tryPao(int row, float col)
 {
     if (limit_pao_sequence)
-        PrintError("错误", "由于炮序限制，tryPao系列函数不可使用！");
+        PrintError("由于炮序限制，tryPao系列函数不可使用！");
 
     int now_time = GameClock();
 
@@ -421,7 +421,7 @@ bool PaoOperator::tryPao(int row, float col)
 bool PaoOperator::tryPao(const std::vector<PAO> &lst)
 {
     if (limit_pao_sequence)
-        PrintError("错误", "由于炮序限制，tryPao系列函数不可使用！");
+        PrintError("由于炮序限制，tryPao系列函数不可使用！");
 
     int now_time = GameClock();
     int success_num = 0;
@@ -452,7 +452,7 @@ bool PaoOperator::tryPao(const std::vector<PAO> &lst)
 void PaoOperator::recoverPao(int row, float col)
 {
     if (!limit_pao_sequence)
-        PrintError("错误", "解除炮序限制，Pao系列函数不可使用！");
+        PrintError("解除炮序限制，Pao系列函数不可使用！");
 
     g_mu.lock();
     int next_pao = nowpao;
@@ -460,7 +460,7 @@ void PaoOperator::recoverPao(int row, float col)
     g_mu.unlock();
 
     if (conflict_resolution_type == COLLECTION && is_drop_conflict(paolist[next_pao]->first.row, paolist[next_pao]->first.col, row, col))
-        PrintError("警告", "位于(#，#)的炮与落点(#，#)冲突", paolist[next_pao]->first.row, paolist[next_pao]->first.col, row, col);
+        PrintError("位于(%d，%d)的炮与落点(%d，%f)冲突", paolist[next_pao]->first.row, paolist[next_pao]->first.col, row, col);
 
     PlantMemory cannon(paolist[next_pao]->second.index);
 
@@ -474,7 +474,7 @@ void PaoOperator::recoverPao(int row, float col)
 void PaoOperator::recoverPao(const std::vector<PAO> &lst)
 {
     if (!limit_pao_sequence)
-        PrintError("错误", "解除炮序限制，Pao系列函数不可使用！");
+        PrintError("解除炮序限制，Pao系列函数不可使用！");
 
     g_mu.lock();
     int next_pao = nowpao;
@@ -486,7 +486,7 @@ void PaoOperator::recoverPao(const std::vector<PAO> &lst)
     for (const auto &drop_grid : lst)
     {
         if (conflict_resolution_type == COLLECTION && is_drop_conflict(paolist[next_pao]->first.row, paolist[next_pao]->first.col, drop_grid.row, drop_grid.col))
-            PrintError("警告", "位于(#，#)的炮与落点(#，#)冲突",
+            PrintError("位于(%d，%d)的炮与落点(%d，%f)冲突",
                        paolist[next_pao]->first.row, paolist[next_pao]->first.col, drop_grid.row, drop_grid.col);
 
         cannon.setIndex(paolist[next_pao]->second.index);
@@ -545,9 +545,9 @@ void PaoOperator::base_fire_roof_paos(std::vector<RP> lst)
 void PaoOperator::roofPao(int row, float col)
 {
     if (!limit_pao_sequence)
-        PrintError("错误", "解除炮序限制，Pao系列函数不可使用！");
+        PrintError("解除炮序限制，Pao系列函数不可使用！");
     if (g_scene != 4 && g_scene != 5)
-        PrintError("错误", "RoofPao函数只适用于 RE 与 ME ");
+        PrintError("RoofPao函数只适用于 RE 与 ME ");
 
     g_mu.lock();
     int roof_nowpao = nowpao;
@@ -565,10 +565,10 @@ void PaoOperator::roofPao(int row, float col)
 void PaoOperator::roofPao(const std::vector<PAO> &lst)
 {
     if (!limit_pao_sequence)
-        PrintError("错误", "解除炮序限制，Pao系列函数不可使用！");
+        PrintError("解除炮序限制，Pao系列函数不可使用！");
     //检查函数运行环境
     if (g_scene != 4 && g_scene != 5)
-        PrintError("错误", "RoofPao函数只适用于RE与ME");
+        PrintError("RoofPao函数只适用于RE与ME");
 
     std::vector<RP> roof_pao_list(lst.size());
     int num = 0;
@@ -597,10 +597,10 @@ void PaoOperator::roofPao(const std::vector<PAO> &lst)
 bool PaoOperator::tryRoofPao(int row, float col)
 {
     if (limit_pao_sequence)
-        PrintError("错误", "由于炮序限制，tryPao系列函数不可使用！");
+        PrintError("由于炮序限制，tryPao系列函数不可使用！");
     //检查函数运行环境
     if (g_scene != 4 && g_scene != 5)
-        PrintError("错误", "RoofPao函数只适用于RE与ME");
+        PrintError("RoofPao函数只适用于RE与ME");
 
     int fire_time;
     int now_time = GameClock();
@@ -628,10 +628,10 @@ bool PaoOperator::tryRoofPao(int row, float col)
 bool PaoOperator::tryRoofPao(const std::vector<PAO> &lst)
 {
     if (limit_pao_sequence)
-        PrintError("错误", "由于炮序限制，tryPao系列函数不可使用！");
+        PrintError("由于炮序限制，tryPao系列函数不可使用！");
     //检查函数运行环境
     if (g_scene != 4 && g_scene != 5)
-        PrintError("错误", "RoofPao函数只适用于RE与ME");
+        PrintError("RoofPao函数只适用于RE与ME");
 
     std::vector<RP> roof_pao_list(lst.size());
     int now_time = GameClock();
@@ -673,11 +673,11 @@ bool PaoOperator::tryRoofPao(const std::vector<PAO> &lst)
 void PaoOperator::rawRoofPao(int pao_row, int pao_col, int drop_row, float drop_col)
 {
     if (g_scene != 4 && g_scene != 5)
-        PrintError("错误", "RawRoofPao函数只适用于RE与ME");
+        PrintError("RawRoofPao函数只适用于RE与ME");
 
     auto it = all_pao.find(GRID(pao_row, pao_col));
     if (it == all_pao.end())
-        PrintError("错误", "请检查 (#, #) 是否为炮");
+        PrintError("请检查 (%d, %d) 是否为炮");
     int fire_time = 387 - get_roof_fly_time(pao_col, drop_col) + GameClock();
     if (g_examine_level != CVZ_NO)
         pao_examine(it, fire_time, drop_row, drop_col);
@@ -689,7 +689,7 @@ void PaoOperator::rawRoofPao(int pao_row, int pao_col, int drop_row, float drop_
 void PaoOperator::rawRoofPao(const std::vector<RAWPAO> &lst)
 {
     if (g_scene != 4 && g_scene != 5)
-        PrintError("错误", "RawRoofPao函数只适用于RE与ME");
+        PrintError("RawRoofPao函数只适用于RE与ME");
 
     std::vector<RP> roof_pao_list(lst.size());
     int num = 0;
@@ -699,7 +699,7 @@ void PaoOperator::rawRoofPao(const std::vector<RAWPAO> &lst)
     for (const auto &rp : lst)
     {
         if ((it = all_pao.find(GRID(rp.pao_row, rp.pao_col))) == all_pao.end())
-            PrintError("错误", "请检查 (#, #) 是否为炮");
+            PrintError("请检查 (%d, %d) 是否为炮");
         fire_time = 387 - get_roof_fly_time(rp.pao_col, rp.drop_col) + GameClock();
         if (g_examine_level != CVZ_NO)
             pao_examine(it, fire_time, rp.pao_row, rp.pao_col);
@@ -764,16 +764,16 @@ void PaoOperator::shovel_and_plant_pao(int row, int col, int move_col, PaoIterat
 void PaoOperator::fixPao(int row, int col, int move_col, int delay_time)
 {
     if (move_col > 1 || move_col < -1)
-        PrintError("错误", "铲种炮不允许位移量超过 1");
+        PrintError("铲种炮不允许位移量超过 1");
 
     auto it = all_pao.find(GRID(row, col));
 
     //是否为炮？
     if (it == all_pao.end())
-        PrintError("错误", "请检查(#, #)是否为炮", row, col);
+        PrintError("请检查(%d, %d)是否为炮", row, col);
 
     if (it->second.is_in_sequence)
-        PrintError("错误", "(#, #)被炮序限制，不允许对其进行铲种操作", row, col);
+        PrintError("(%d, %d)被炮序限制，不允许对其进行铲种操作", row, col);
 
     RunningInThread(shovel_and_plant_pao, row, col, move_col, it, delay_time);
 }
@@ -781,7 +781,7 @@ void PaoOperator::fixPao(int row, int col, int move_col, int delay_time)
 void PaoOperator::tryFixPao()
 {
     if (limit_pao_sequence)
-        PrintError("错误", "由于炮序限制，tryPao系列函数不可使用！");
+        PrintError("由于炮序限制，tryPao系列函数不可使用！");
 
     RunningInThread([&]() {
         pvz::PlantMemory cannon;
