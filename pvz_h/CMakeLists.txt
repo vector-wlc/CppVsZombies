@@ -8,8 +8,8 @@ set(CMAKE_CXX_COMPILER "g++")
 
 include_directories(./include)
 
-aux_source_directory(./source scrs)
+aux_source_directory(./source srcs)
 
-add_library(pvz ${scrs})
+add_library(pvz  ${srcs})
 
-#add_executable(test ${scrs})
+#add_executable(test ${srcs})

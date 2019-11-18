@@ -4,93 +4,94 @@
 
 namespace pvz
 {
+
 /* place */
 PlaceMemory::PlaceMemory()
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0x11C);
+    offset = ReadMemory<int>(g_mainobject + 0x11C);
     index = 0;
 }
 
 PlaceMemory::PlaceMemory(int i)
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0x11C);
+    offset = ReadMemory<int>(g_mainobject + 0x11C);
     index = i;
 }
 
 void PlaceMemory::getOffset()
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0x11C);
+    offset = ReadMemory<int>(g_mainobject + 0x11C);
 }
 
 /*  seed  */
 SeedMemory::SeedMemory()
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0x144);
+    offset = ReadMemory<int>(g_mainobject + 0x144);
     index = 0;
 }
 
 SeedMemory::SeedMemory(int i)
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0x144);
+    offset = ReadMemory<int>(g_mainobject + 0x144);
     index = i;
 }
 
 void SeedMemory::getOffset()
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0x144);
+    offset = ReadMemory<int>(g_mainobject + 0x144);
 }
 
 /*  plant  */
 PlantMemory::PlantMemory()
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0xAC);
+    offset = ReadMemory<int>(g_mainobject + 0xAC);
     index = 0;
 }
 
 PlantMemory::PlantMemory(int i)
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0xAC);
+    offset = ReadMemory<int>(g_mainobject + 0xAC);
     index = i;
 }
 
 void PlantMemory::getOffset()
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0xAC);
+    offset = ReadMemory<int>(g_mainobject + 0xAC);
 }
 
 /* zombie */
 ZombieMemory::ZombieMemory()
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0x90);
+    offset = ReadMemory<int>(g_mainobject + 0x90);
     index = 0;
 }
 
 ZombieMemory::ZombieMemory(int i)
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0x90);
+    offset = ReadMemory<int>(g_mainobject + 0x90);
     index = i;
 }
 
 void ZombieMemory::getOffset()
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0x90);
+    offset = ReadMemory<int>(g_mainobject + 0x90);
 }
 
 ItemMemory::ItemMemory()
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0xE4);
+    offset = ReadMemory<int>(g_mainobject + 0xE4);
     index = 0;
 }
 
 ItemMemory::ItemMemory(int i)
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0xE4);
+    offset = ReadMemory<int>(g_mainobject + 0xE4);
     index = i;
 }
 
 void ItemMemory::getOffset()
 {
-    offset = ReadMemory<int>(0x6A9EC0, 0x768, 0xE4);
+    offset = ReadMemory<int>(g_mainobject + 0xE4);
 }
 
 /* 一些常用的函数 */
@@ -139,28 +140,62 @@ int GetSeedIndex(int type, bool imitator)
 //GetPlantIndex(3,4,33)---如果三行四列有花盆，返回其对象序列，否则返回-1
 int GetPlantIndex(int row, int col, int type)
 {
-
     PlantMemory plant;
     int plants_count_max = plant.countMax();
-    for (int i = 0; i < plants_count_max; i++)
+    int plant_type;
+    for (int i = 0; i < plants_count_max; ++i)
     {
         plant.setIndex(i);
-        if (type == -1) //如果植物存在	且不为南瓜花盆荷叶
+        if ((!plant.isDisappeared()) && (!plant.isCrushed()) &&
+            (plant.row() + 1 == row) && (plant.col() + 1 == col))
         {
-            if ((!plant.isDisappeared()) && (!plant.isCrushed()) &&
-                (plant.row() + 1 == row) && (plant.col() + 1 == col) &&
-                (plant.type() != 16) && (plant.type() != 30) && (plant.type() != 33))
-                return i; //返回植物的对象序列
-        }
-        else //如果植物存在且植物类型一致
-        {
-            if ((!plant.isDisappeared()) && (!plant.isCrushed()) &&
-                (plant.row() + 1 == row) && (plant.col() + 1 == col) &&
-                (plant.type() == type))
-                return i; //返回植物的对象序列
+            plant_type = plant.type();
+            if (type == -1) //如果植物存在	且不为南瓜花盆荷叶
+            {
+                if ((plant_type != 16) && (plant_type != 30) && (plant_type != 33))
+                    return i; //返回植物的对象序列
+            }
+            else if (plant_type == type)
+            {
+                return i;
+            }
         }
     }
     return -1; //没有符合要求的植物返回-1
+}
+
+//得到一组指定位置的植物下标
+//无视 荷叶、南瓜、花盆
+void GetPlantIndexs(const std::vector<GRID> &grid_lst,
+                    int type,
+                    std::vector<int> &indexs)
+{
+    PlantMemory plant;
+    g_mu.lock();
+    indexs.assign(grid_lst.size(), -1);
+
+    int plant_count_max = plant.countMax();
+    int plant_type;
+
+    for (int index = 0; index < plant_count_max; ++index)
+    {
+        plant.setIndex(index);
+        if (!plant.isCrushed() && !plant.isDisappeared())
+        {
+            auto it = std::find(grid_lst.begin(), grid_lst.end(), GRID(plant.row() + 1, plant.col() + 1));
+            if (it == grid_lst.end())
+                continue;
+            plant_type = plant.type();
+            // 目标植物存在
+            if (plant_type == type)
+                indexs[it - grid_lst.begin()] = index;
+            // 目标植物不存在但是有其他植物
+            else if (type != 16 && type != 30 && type != 33 &&
+                     plant_type != 16 && plant_type != 30 && plant_type != 33) // 荷叶、南瓜、花盆
+                indexs[it - grid_lst.begin()] = -2;
+        }
+    }
+    g_mu.unlock();
 }
 
 //检查僵尸是否存在

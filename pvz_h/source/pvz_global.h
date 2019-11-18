@@ -11,8 +11,6 @@ namespace pvz
 {
 extern int g_scene;           //记录游戏场景
 extern float g_DPI;           //记录DPI
-extern bool g_high_precision; //记录是否开启高精度
-extern bool g_examine;        //记录是否开启检查
 extern bool g_auto_exit;      //是否自动退出
 extern bool g_error_exit;     //因错误退出
 extern std::mutex g_mu;       //互斥锁

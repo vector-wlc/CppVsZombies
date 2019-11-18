@@ -3,7 +3,7 @@
 
 /*
  * 作者：向量
- * 日期：2019-08-11
+ * 日期：2019-12-2
  * 摘要：包含 CvZ 所有接口
  * 命名格式：类的公有成员函数为小驼峰命名规则，普通函数和类为大驼峰命名规则，
  *		   其他标识符方式均为下划线
@@ -14,10 +14,8 @@
 #define LIBPVZ_H
 
 #include <cstdio>
-#include <fstream>
 #include <Windows.h>
 #include <string>
-#include <sstream>
 #include <thread>
 #include <mutex>
 #include <vector>
@@ -25,6 +23,7 @@
 #include <initializer_list>
 #include <algorithm>
 #include <functional>
+#include <list>
 
 namespace pvz
 {
@@ -137,7 +136,7 @@ inline void RunningInThread(FUNC func, Args... args)
 	task.detach();
 }
 
-//########## memory functions ###############
+//########## memory basic functions ###############
 
 extern HANDLE g_handle;
 extern int g_mainobject;
@@ -171,143 +170,6 @@ void WriteMemory(T value, Args... args)
 		else
 			WriteProcessMemory(g_handle, (void *)(buff + *it), &value, sizeof(value), nullptr);
 }
-
-//判断鼠标是否在游戏窗口内
-inline bool MouseInGame()
-{
-	return ReadMemory<bool>(g_mainobject + 0x59);
-}
-
-//返回鼠标所在行
-inline int MouseRow()
-{
-	return ReadMemory<int>(g_mainobject + 0x13C, 0x28) + 1;
-}
-
-//返回鼠标所在列
-inline float MouseCol()
-{
-	return 1.0 * ReadMemory<int>(g_mouse_offset + 0xE0) / 80;
-}
-
-//判断游戏是否暂停
-inline bool GamePaused()
-{
-	return ReadMemory<bool>(g_mainobject + 0x164);
-}
-
-//获取游戏当前游戏时钟
-inline int GameClock()
-{
-	return ReadMemory<int>(g_mainobject + 0x5568);
-}
-
-// 一个内部时钟, 可用于判断舞王/伴舞的舞蹈/前进
-inline int DancerClock()
-{
-	return ReadMemory<int>(g_pvzbase + 0x838);
-}
-
-//返回刷新倒计时
-inline int Countdown()
-{
-	return ReadMemory<int>(g_mainobject + 0x559c);
-}
-
-//返回大波刷新倒计时
-inline int HugeWaveCountdown()
-{
-	return ReadMemory<int>(g_mainobject + 0x55A4);
-}
-
-//返回已刷新波数
-inline int NowWave()
-{
-	return ReadMemory<int>(g_mainobject + 0x557c);
-}
-
-//返回初始刷新倒计时
-inline int InitialCountdown()
-{
-	return ReadMemory<int>(g_mainobject + 0x55A0);
-}
-
-//返回一行的冰道坐标 范围：[0,800]
-//使用示例：
-//IceAbscissa(0)------得到第一行的冰道坐标
-inline int IceAbscissa(int i)
-{
-	return ReadMemory<int>(g_mainobject + 0x60C + 4 * i);
-}
-
-//获取游戏信息
-//1: 主界面, 2: 选卡, 3: 正常游戏/战斗, 4: 僵尸进屋, 7: 模式选择.
-inline int GameUi()
-{
-	return ReadMemory<int>(g_pvzbase + 0x7FC);
-}
-
-//等待游戏开始
-void WaitGameStart();
-
-//等待游戏结束
-void WaitGameEnd();
-
-//获取指定类型植物的卡槽对象序列 植物类型与图鉴顺序相同，从0开始
-//返回的卡片对象序列范围：[0,9]
-//GetSeedIndex(16)------------获得荷叶的卡槽对象序列
-//GetSeedIndex(16,true)-------获得模仿者荷叶的卡槽对象序列
-int GetSeedIndex(int type, bool imitator = false);
-
-//得到指定位置和类型的植物对象序列
-//当参数type为默认值-1时该函数无视南瓜花盆荷叶
-//使用示例：
-//GetPlantIndex(3,4)------如果三行四列有除南瓜花盆荷叶之外的植物时，返回该植物的对象序列，否则返回-1
-//GetPlantIndex(3,4,47)---如果三行四列有春哥，返回其对象序列，否则返回-1
-//GetPlantIndex(3,4,33)---如果三行四列有花盆，返回其对象序列，否则返回-1
-int GetPlantIndex(int row, int col, int type = -1);
-
-//检查僵尸是否存在
-//使用示例
-//ExamineZombieExist()-------检查场上是否存在僵尸
-//ExamineZombieExist(23)-------检查场上是否存在巨人僵尸
-//ExamineZombieExist(-1,4)-----检查第四行是否有僵尸存在
-//ExamineZombieExist(23,4)-----检查第四行是否有巨人僵尸存在
-bool ExamineZombieExist(int type = -1, int row = -1);
-
-//判断该格子是否能种植物
-//该函数不适用于屋顶场景
-//此函数只能判断此格子能不能种植物，但并不能判断此格子是否有植物
-//使用示例：
-//IsPlantable(3,3)-----3行3列如果能种植物，默认为非灰烬植物(即使此格子有非南瓜花盆荷叶的植物)，返回true,否则返回false
-//IsPlantable(3,3,true)----3行3列如果能种植物，为灰烬植物，返回true,否则返回false
-//如果判定的植物是灰烬植物则会无视冰车
-bool IsPlantable(int row, int col, bool hui_jin = false);
-
-//检测巨人是否对该格子植物锤击
-//IsHammering(3,4)------------如果该格子有巨人不同时举锤返回true，否则返回false.
-bool IsHammering(int row, int col, bool pumpkin = false);
-
-//检测该格子是否会被即将爆炸的小丑炸到
-//使用示例：IsExplode(3,4)-------如果（3，4）会被小丑炸到返回true 否则返回false.
-bool IsExplode(int row, int col);
-
-//得到僵尸出怪类型
-//参数为 vector 数组
-//使用示例：
-//std::vector<int>zombies_type;
-//GetZombieType(zombies_type);
-//僵尸的出怪类型将会储存在数组 zombies_type 中
-void GetZombieType(std::vector<int> &type_list);
-
-//得到相应波数的出怪类型
-//参数为 vector 数组
-//使用示例：
-//std::vector<int>zombies_type;
-//GetWaveZombieType(zombies_type);-------得到当前波数出怪类型
-//GetWaveZombieType(zombies_type, 1);-------得到第一波出怪类型
-//僵尸的出怪类型将会储存在数组 zombies_type 中
-void GetWaveZombieType(std::vector<int> &zombie_type, int _wave = wave);
 
 //########## memory classes ###############
 
@@ -383,7 +245,13 @@ public:
 	//返回当前最大植物数目
 	static int countMax()
 	{
-		return ReadMemory<int>(0x6A9EC0, 0x768, 0xB0);
+		return ReadMemory<int>(g_mainobject + 0xB0);
+	}
+
+	//返回下一个植物的栈位/编号/对象序列
+	static int nextIndex()
+	{
+		return ReadMemory<int>(g_mainobject + 0xB8);
 	}
 
 	//返回植物所在行 数值范围：[0,5]
@@ -433,6 +301,11 @@ public:
 		return ReadMemory<int>(offset + 0x40 + 0x14C * index);
 	}
 
+	int activeCountdown()
+	{
+		return ReadMemory<int>(offset + 0x50 + 0x14C * index);
+	}
+
 	//发射子弹倒计时，该倒计时不论是否有僵尸一直不断减小并重置
 	int bulletCountdown()
 	{
@@ -473,7 +346,7 @@ public:
 	//返回僵尸最大数目
 	static int countMax()
 	{
-		return ReadMemory<int>(0x6A9EC0, 0x768, 0x94);
+		return ReadMemory<int>(g_mainobject + 0x94);
 	}
 
 	//判断僵尸是否存在
@@ -633,7 +506,7 @@ public:
 	//包括：弹坑 墓碑 罐子等
 	static int countMax()
 	{
-		return ReadMemory<int>(0x6A9EC0, 0x768, 0x120);
+		return ReadMemory<int>(g_mainobject + 0x120);
 	}
 
 	//返回该格子物品的类型
@@ -673,13 +546,13 @@ public:
 	//包括金币 钻石 礼盒等
 	int count()
 	{
-		return ReadMemory<int>(0x6A9EC0, 0x768, 0xF4);
+		return ReadMemory<int>(g_mainobject + 0xF4);
 	}
 
 	//返回需要收集物品的最大数目
 	int countMax()
 	{
-		return ReadMemory<int>(0x6A9EC0, 0x768, 0xE8);
+		return ReadMemory<int>(g_mainobject + 0xE8);
 	}
 
 	//判断物品是否消失
@@ -707,6 +580,150 @@ public:
 	}
 };
 
+//########## memory functions ###############
+
+//判断鼠标是否在游戏窗口内
+inline bool MouseInGame()
+{
+	return ReadMemory<bool>(g_mainobject + 0x59);
+}
+
+//返回鼠标所在行
+inline int MouseRow()
+{
+	return ReadMemory<int>(g_mainobject + 0x13C, 0x28) + 1;
+}
+
+//返回鼠标所在列
+inline float MouseCol()
+{
+	return 1.0 * ReadMemory<int>(g_mouse_offset + 0xE0) / 80;
+}
+
+//判断游戏是否暂停
+inline bool GamePaused()
+{
+	return ReadMemory<bool>(g_mainobject + 0x164);
+}
+
+//获取游戏当前游戏时钟
+inline int GameClock()
+{
+	return ReadMemory<int>(g_mainobject + 0x5568);
+}
+
+// 一个内部时钟, 可用于判断舞王/伴舞的舞蹈/前进
+inline int DancerClock()
+{
+	return ReadMemory<int>(g_pvzbase + 0x838);
+}
+
+//返回刷新倒计时
+inline int Countdown()
+{
+	return ReadMemory<int>(g_mainobject + 0x559c);
+}
+
+//返回大波刷新倒计时
+inline int HugeWaveCountdown()
+{
+	return ReadMemory<int>(g_mainobject + 0x55A4);
+}
+
+//返回已刷新波数
+inline int NowWave()
+{
+	return ReadMemory<int>(g_mainobject + 0x557c);
+}
+
+//返回初始刷新倒计时
+inline int InitialCountdown()
+{
+	return ReadMemory<int>(g_mainobject + 0x55A0);
+}
+
+//返回一行的冰道坐标 范围：[0,800]
+//使用示例：
+//IceAbscissa(0)------得到第一行的冰道坐标
+inline int IceAbscissa(int i)
+{
+	return ReadMemory<int>(g_mainobject + 0x60C + 4 * i);
+}
+
+//获取游戏信息
+//1: 主界面, 2: 选卡, 3: 正常游戏/战斗, 4: 僵尸进屋, 7: 模式选择.
+inline int GameUi()
+{
+	return ReadMemory<int>(g_pvzbase + 0x7FC);
+}
+
+//等待游戏开始
+void WaitGameStart();
+
+//等待游戏结束
+void WaitGameEnd();
+
+//获取指定类型植物的卡槽对象序列 植物类型与图鉴顺序相同，从0开始
+//返回的卡片对象序列范围：[0,9]
+//GetSeedIndex(16)------------获得荷叶的卡槽对象序列
+//GetSeedIndex(16,true)-------获得模仿者荷叶的卡槽对象序列
+int GetSeedIndex(int type, bool imitator = false);
+
+//得到指定位置和类型的植物对象序列
+//当参数type为默认值-1时该函数无视南瓜花盆荷叶
+//使用示例：
+//GetPlantIndex(3,4)------如果三行四列有除南瓜花盆荷叶之外的植物时，返回该植物的对象序列，否则返回-1
+//GetPlantIndex(3,4,47)---如果三行四列有春哥，返回其对象序列，否则返回-1
+//GetPlantIndex(3,4,33)---如果三行四列有花盆，返回其对象序列，否则返回-1
+int GetPlantIndex(int row, int col, int type = -1);
+
+//得到一组指定位置的植物下标
+void GetPlantIndexs(const std::vector<GRID> &grid_lst,
+					int type,
+					std::vector<int> &indexs);
+
+//检查僵尸是否存在
+//使用示例
+//ExamineZombieExist()-------检查场上是否存在僵尸
+//ExamineZombieExist(23)-------检查场上是否存在巨人僵尸
+//ExamineZombieExist(-1,4)-----检查第四行是否有僵尸存在
+//ExamineZombieExist(23,4)-----检查第四行是否有巨人僵尸存在
+bool ExamineZombieExist(int type = -1, int row = -1);
+
+//判断该格子是否能种植物
+//该函数不适用于屋顶场景
+//此函数只能判断此格子能不能种植物，但并不能判断此格子是否有植物
+//使用示例：
+//IsPlantable(3,3)-----3行3列如果能种植物，默认为非灰烬植物(即使此格子有非南瓜花盆荷叶的植物)，返回true,否则返回false
+//IsPlantable(3,3,true)----3行3列如果能种植物，为灰烬植物，返回true,否则返回false
+//如果判定的植物是灰烬植物则会无视冰车
+bool IsPlantable(int row, int col, bool hui_jin = false);
+
+//检测巨人是否对该格子植物锤击
+//IsHammering(3,4)------------如果该格子有巨人不同时举锤返回true，否则返回false.
+bool IsHammering(int row, int col, bool pumpkin = false);
+
+//检测该格子是否会被即将爆炸的小丑炸到
+//使用示例：IsExplode(3,4)-------如果（3，4）会被小丑炸到返回true 否则返回false.
+bool IsExplode(int row, int col);
+
+//得到僵尸出怪类型
+//参数为 vector 数组
+//使用示例：
+//std::vector<int>zombies_type;
+//GetZombieType(zombies_type);
+//僵尸的出怪类型将会储存在数组 zombies_type 中
+void GetZombieType(std::vector<int> &type_list);
+
+//得到相应波数的出怪类型
+//参数为 vector 数组
+//使用示例：
+//std::vector<int>zombies_type;
+//GetWaveZombieType(zombies_type);-------得到当前波数出怪类型
+//GetWaveZombieType(zombies_type, 1);-------得到第一波出怪类型
+//僵尸的出怪类型将会储存在数组 zombies_type 中
+void GetWaveZombieType(std::vector<int> &zombie_type, int _wave = wave);
+
 // ########################### time #####################
 
 //预判函数
@@ -732,6 +749,12 @@ void Delay(int time);
 //Until(-100);
 //这种用法是错误的！
 void Until(int time);
+
+//冰三函数
+//注意：此函数在子线程运行
+//使用示例：
+//Ice3(298) --------- 修正冰三时间点至当前时刻的 298cs 后
+void Ice3(int delay_time);
 
 //######################## mouse and keyboard ###########################
 
@@ -1066,7 +1089,7 @@ public:
 	BaseBaseAutoThread() : pause_(false), stop_(true), interval_(100) {}
 	virtual ~BaseBaseAutoThread() {}
 	//调用此函数使得线程停止运行
-	void stop() { stop_ = true; }
+	virtual void stop() { stop_ = true; }
 	//调用此函数使得线程暂停运行
 	void pause() { pause_ = true; }
 	//调用此函数使得线程继续运行
@@ -1099,6 +1122,11 @@ public:
 //coffee：使用咖啡豆，激活存冰，使用方法与Coffee相同
 class FillIce : public BaseAutoThread
 {
+private:
+	void use_ice();
+	std::vector<int> ice_plant_indexs;
+	int coffee_index;
+
 public:
 	FillIce();
 	~FillIce() {}
@@ -1106,7 +1134,10 @@ public:
 	//重置存冰位置
 	//使用示例：
 	//resetFillList({{3,4},{5,6}})-----将存冰位置重置为{3，4}，{5，6}
-	void resetFillList(const std::vector<GRID> &lst);
+	void resetFillList(const std::vector<GRID> &lst)
+	{
+		base_reset_list(lst);
+	}
 
 	//线程开始工作
 	//使用示例：
@@ -1115,11 +1146,13 @@ public:
 
 	//使用咖啡豆
 	//使用此函数前必须使用start
-	void coffee() const;
+	void coffee();
 
-private:
-	void use_ice();
-	int coffee_index;
+	//调用此函数使得线程停止运行
+	virtual void stop()
+	{
+		stop_ = true;
+	}
 };
 
 //自动存用冰类对象：使用此对象可以使您更愉快的管理存冰
@@ -1170,7 +1203,8 @@ private:
 	int nut_type_;
 	int nut_seed_index;
 	int fix_hp_;
-	void update_nut() const;
+	std::vector<int> nut_plant_indexs;
+	void update_nut();
 };
 
 //自动修补坚果类对象
@@ -1303,10 +1337,6 @@ private:
 extern CollectItem item_collector;
 
 // ########################  mode select #################
-
-//开关函数：开启高精度
-//使用此函数会导致较高的 CPU 占用
-void OpenHighPrecision();
 
 enum
 {

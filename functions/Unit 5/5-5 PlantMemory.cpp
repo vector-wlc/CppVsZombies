@@ -13,8 +13,6 @@ int main()
     while (1)
     {
         Sleep(100);
-        //在这里开始重复打印
-        pvz::StartReprint();
         // 获取最大植物数量
         int plant_count_max = plant.countMax();
         // 遍历所有植物
@@ -32,8 +30,6 @@ int main()
                      << plant.col() + 1 << "\n";   //所在列
             }
         }
-        //在这里停止重复打印
-        pvz::EndReprint();
     }
 
     return 0;

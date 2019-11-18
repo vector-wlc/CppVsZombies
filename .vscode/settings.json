@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.m": "matlab",
         "initializer_list": "cpp",
         "valarray": "cpp",
         "functional": "cpp",
@@ -62,6 +63,10 @@
         "xlocnum": "cpp",
         "xmemory0": "cpp",
         "xstddef": "cpp",
-        "xtr1common": "cpp"
+        "xtr1common": "cpp",
+        "cctype": "cpp",
+        "concepts": "cpp",
+        "ctime": "cpp",
+        "queue": "cpp"
     }
 }

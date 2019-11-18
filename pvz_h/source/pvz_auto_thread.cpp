@@ -52,11 +52,9 @@ void FillIce::start(const std::vector<GRID> &lst)
 	}
 }
 
-void FillIce::resetFillList(const std::vector<GRID> &lst) { base_reset_list(lst); }
-
 void FillIce::use_ice()
 {
-	std::vector<int> ice_seed_index; //定义一个动态数组，存储寒冰菇卡片的对象序列
+	std::vector<int> ice_seed_index; 
 
 	WaitGameStart();
 
@@ -78,8 +76,13 @@ void FillIce::use_ice()
 	while (!stop_)
 	{
 		Sleep(interval_);
-		//等待继续命令
-		if (pause_ || GamePaused() || GameUi() != 3)
+
+		if (GamePaused() || GameUi() != 3)
+			continue;
+
+		GetPlantIndexs(grid_lst, 14, ice_plant_indexs);
+
+		if (pause_)
 			continue;
 
 		for (int i = 0; i < ice_seed_index.size(); i++)
@@ -88,61 +91,60 @@ void FillIce::use_ice()
 			//如果卡片不能使用
 			if (!ice_seed.isUsable())
 				continue;
-			//遍历所有存冰位
+
 			for (int j = 0; j < grid_lst.size(); j++)
 			{
 				//如果此存冰坐标没有植物，使用寒冰菇
-				if (GetPlantIndex(grid_lst[j].row, grid_lst[j].col) == -1)
+				if (ice_plant_indexs[j] == -1)
 				{
 					//如果为池塘场景而且在水路
 					if ((g_scene == 2 || g_scene == 3) &&
 						(grid_lst[j].row == 3 || grid_lst[j].row == 4))
-						//如果不存在荷叶
+					{
 						if (GetPlantIndex(grid_lst[j].row, grid_lst[j].col, 16) == -1)
 						{
-							//如果荷叶卡片没有恢复
 							if (!leaf_seed.isUsable())
-								continue; //为了不影响其他地点的寒冰菇种植，跳过循环
-							//种植荷叶
+								continue;
 							Card(leaf_seed_index + 1, grid_lst[j].row, grid_lst[j].col);
 						}
-
+					}
 					//由于花盆比较特殊，在此不考虑天台自动补花盆情况
 
-					//种植寒冰菇
 					Card(ice_seed_index[i] + 1, grid_lst[j].row, grid_lst[j].col);
+					ice_plant_indexs[j] = 1;
 					break;
 				}
 			}
-			int time = GameClock();
-			while (GameClock() <= time + 1)
-				Sleep(1);
+			Sleep(10);
 		}
 	}
-
-	return;
 }
 
 //使用咖啡豆，必须配合自动存冰函数使用
-void FillIce::coffee() const
+void FillIce::coffee()
 {
-	if (grid_lst.size() == 0)
-		PrintError("存冰列表未初始化！");
-	else if (coffee_index == -1)
+	if (coffee_index == -1)
 		PrintError("您没有选择咖啡豆卡片!");
-	else
-	{
-		g_mu.lock();
-		RightClick(1, 1);
-		LeftClick(70, 50 + 50 * (coffee_index + 1));
-		for (int j = grid_lst.size() - 1; j >= 0; j--)
-			SceneClick(grid_lst[j].row, grid_lst[j].col);
-		RightClick(1, 1);
 
-		if (g_examine_level == CVZ_INFO)
-			std::printf("	Use coffee\n\n");
-		g_mu.unlock();
+	for (int i = ice_plant_indexs.size() - 1; i >= 0; --i)
+	{
+		if (ice_plant_indexs[i] >= 0)
+		{
+			g_mu.lock();
+			RightClick(1, 1);
+			LeftClick(70, 50 + 50 * (coffee_index + 1));
+			SceneClick(grid_lst[i].row, grid_lst[i].col);
+			RightClick(1, 1);
+
+			if (g_examine_level == CVZ_INFO)
+				std::printf("	Use coffee\n\n");
+			g_mu.unlock();
+
+			return;
+		}
 	}
+
+	PrintError("您没有可用的存冰了!");
 }
 
 FixNut::FixNut() : BaseAutoThread() {}
@@ -215,7 +217,7 @@ void FixNut::resetFixHp(int fix_hp)
 }
 
 //更新坚果
-void FixNut::update_nut() const
+void FixNut::update_nut()
 {
 	//等待游戏开始
 	WaitGameStart();
@@ -242,14 +244,15 @@ void FixNut::update_nut() const
 		if (!nut_seed.isUsable())
 			continue;
 
+		GetPlantIndexs(grid_lst, nut_type_, nut_plant_indexs);
+
+		int i = -1;
 		for (const auto &e : grid_lst)
 		{
-			//这里使用了多个 GetPlantIndex，开销大，待优化......
-
-			int nut_index = GetPlantIndex(e.row, e.col, nut_type_);
+			int nut_index = nut_plant_indexs[++i];
 
 			//如果此处存在除坚果类植物的植物
-			if (GetPlantIndex(e.row, e.col) != -1 && nut_index == -1 && nut_type_ != 30)
+			if (nut_index == -2)
 				continue;
 
 			//如果此处不存在坚果植物
@@ -270,7 +273,7 @@ void FixNut::update_nut() const
 				//种植坚果
 				Card(nut_seed_index + 1, e.row, e.col);
 				//延迟一定时间使得内存中的信息得以变化
-				Sleep(50);
+				Sleep(10);
 				break;
 			}
 			else //如果此处存在坚果类植物

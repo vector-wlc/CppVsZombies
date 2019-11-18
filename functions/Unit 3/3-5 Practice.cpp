@@ -2,9 +2,6 @@
 // 此文件是第三单元的练习
 #include "pvz.h"
 
-// 对第二单元的经典四炮进行一些优化
-// 使用一些自动操作对象
-
 int main()
 {
     OpenExamine(pvz::CVZ_NO);
@@ -54,17 +51,18 @@ int main()
             }
             else
             {
-                //僵尸在 1800 刷新，其余参数的加减请参考第 40 行的注释
-                Until(1800 - 298 + 50);
+                Delay(373 + 210 - 298);
                 ice_filler.coffee();
+                Ice3(298);
             }
         }
         else if (wave_in(3, 7, 12, 16))
         {
             Prejudge(1800 - 373 - 200, wave);
             Pao({{2, 8.5}, {5, 8.5}});
-            Until(1800 - 298 + 50);
+            Delay(373 + 210 - 298);
             ice_filler.coffee();
+            Ice3(298);
         }
         else if (wave_in(4, 8, 13, 17))
         {

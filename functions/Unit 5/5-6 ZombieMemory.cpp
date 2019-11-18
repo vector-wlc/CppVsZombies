@@ -13,7 +13,6 @@ int main()
     while (1)
     {
         Sleep(100);
-        pvz::StartReprint();
         // 获取最大僵尸数量
         int zombie_count_max = zombie.countMax();
         // 遍历所有僵尸
@@ -30,7 +29,6 @@ int main()
                      << zombie.row() + 1 << "\n";      //所在行
             }
         }
-        pvz::EndReprint();
     }
 
     return 0;

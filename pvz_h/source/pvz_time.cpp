@@ -6,7 +6,7 @@
 namespace pvz
 {
 
-static int zombie_refresh_time = 0;
+extern int zombie_refresh_time;
 
 //预判时间
 void Prejudge(int t, int w)
@@ -34,25 +34,21 @@ void Prejudge(int t, int w)
     {
         //等待下一波
         while (NowWave() < (wave - 1))
-            if (!g_high_precision)
                 Sleep(1);
 
         //如果是大波
         if (wave == 10 || wave == 20)
         {
             while (Countdown() > 4)
-                if (!g_high_precision)
                     Sleep(1);
 
             while (HugeWaveCountdown() > base_time)
-                if (!g_high_precision)
                     Sleep(1);
             zombie_refresh_time = HugeWaveCountdown() + GameClock();
         }
         else
         {
             while (Countdown() > base_time)
-                if (!g_high_precision)
                     Sleep(1);
             zombie_refresh_time = Countdown() + GameClock();
         }
@@ -71,9 +67,11 @@ void Prejudge(int t, int w)
         g_mu.unlock();
     }
     //等待时间到达预定时间戳
+    while ((GameClock() - zombie_refresh_time) < t - 2)
+        Sleep(1);
+
     while ((GameClock() - zombie_refresh_time) < t)
-        if (!g_high_precision)
-            Sleep(1);
+        ;
 }
 
 //延迟一定时间
@@ -91,9 +89,11 @@ void Delay(int time)
             g_mu.unlock();
         }
 
+        while (GameClock() - in_time < time - 2)
+            Sleep(1);
+
         while (GameClock() - in_time < time)
-            if (!g_high_precision)
-                Sleep(1);
+            ;
     }
     else
         PrintError("Delay函数参数不能为负数,当前的参数为 %d", time);
@@ -112,8 +112,44 @@ void Until(int time)
         std::printf("	Until time arrive :%dcs...\n\n", time);
         g_mu.unlock();
     }
+    //等待时间到达预定时间戳
+    while ((GameClock() - zombie_refresh_time) < time - 2)
+        Sleep(1);
+
     while ((GameClock() - zombie_refresh_time) < time)
-        if (!g_high_precision)
-            Sleep(1);
+        ;
 }
+
+void Ice3(int delay_time)
+{
+	RunningInThread([=]() {
+		int ice3_time = delay_time + GameClock();
+		Sleep((delay_time - 90) * 10);
+
+		PlantMemory ice;
+		int ice_index;
+		int count_max = ice.countMax();
+		for (int index = 0; index < count_max; ++index)
+		{
+			ice.setIndex(index);
+			// 寻找目标寒冰菇
+			if (ice.type() == 14 && ice.status() == 2)
+			{
+				ice_index = index;
+				break;
+			}
+		}
+
+		// 写入四次数据
+		for (int i = 0; i < 4; ++i)
+		{
+			Sleep(20);
+			int clock = GameClock();
+			while (clock == GameClock())
+				;
+			WriteMemory<int>(ice3_time - GameClock() + 1, g_mainobject + 0xAC, 0x50 + 0x14C * ice_index);
+		}
+	});
+}
+
 } // namespace pvz

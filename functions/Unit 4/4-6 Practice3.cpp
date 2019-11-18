@@ -20,26 +20,13 @@ inline void MyRoofPao(float col_1_3, float col_5_7)
     pao_col_in_5_and_7.tryRoofPao(4, col_5_7);
 }
 
-//ICE3 的时间具有不确定性，即在 210-211 之间疯狂摇摆
-//所以需要用户自己调节
-//返回 ICE3 的时间
-int ICE3()
-{
-    //输出波数以帮助调整时间
-    printf("%d\n", wave);
-    //调整每波 ICE3 的时间
-    if (wave_in(4, 6, 13, 16))
-        return 211;
-    return 210;
-}
-
 int main()
 {
     //选卡
     SelectCards({{"kfd"}, {"hbg"}, {"Mhbg"}, {"hmg"}, {"ytzd"}, {"hblj"}, {"hp"}, {"ymts"}, {"ymjnp"}, {"gjg"}});
 
     //将CvZ自带的对象炮列表清零
-    UpdatePaoList({});
+    UpdatePaoList({});  
 
     using pvz::MouseCol;
     using pvz::MouseRow;
@@ -107,8 +94,9 @@ int main()
     //############# wave 4 ##################
     Prejudge(1145 - 387, 4);
     MyRoofPao(8.8, 8.8);
-    Until(1145 + ICE3() - 298);
+    Delay(387 + 210 - 298);
     Coffee();
+    Ice3(298);
 
     //############# wave 5 ##################
     Prejudge(570 - 387, 5);
@@ -117,8 +105,9 @@ int main()
     MyRoofPao(8.4, 8.4);
     Until(1200 - 387);
     MyRoofPao(8.8, 8.8);
-    Until(1200 + ICE3() - 298);
+    Delay(387 + 210 - 298);
     Coffee();
+    Ice3(298);
 
     //############# wave 6 ##################
     Prejudge(410 - 387, 6);
@@ -127,8 +116,9 @@ int main()
     MyRoofPao(8.45, 8.45);
     Until(1200 - 387);
     MyRoofPao(8.9, 8.8);
-    Until(1200 + ICE3() - 298);
+    Delay(387 + 210 - 298);
     Coffee();
+    Ice3(298);
 
     //############# wave 7 ##################
     Prejudge(410 - 387, 7);
@@ -190,8 +180,9 @@ int main()
     //############# wave 12 ##################
     Prejudge(1145 - 387, 12);
     MyRoofPao(9, 8.8);
-    Until(1145 + ICE3() - 298);
+    Delay(387 + 210 - 298);
     Coffee();
+    Ice3(298);
 
     //############# wave 13 ##################
     Prejudge(570 - 387, 13);
@@ -200,8 +191,9 @@ int main()
     MyRoofPao(8.4, 8.4);
     Until(1215 - 387);
     MyRoofPao(8.8, 8.4);
-    Until(1215 + ICE3() - 298);
+    Delay(387 + 210 - 298);
     Coffee();
+    Ice3(298);
 
     //############# wave 14 ##################
     Prejudge(420 - 373, 14);
@@ -210,8 +202,9 @@ int main()
     MyRoofPao(8.45, 8.45);
     Until(1215 - 387);
     MyRoofPao(8.9, 8.9);
-    Until(1215 + ICE3() - 298);
+    Delay(387 + 210 - 298);
     Coffee();
+    Ice3(298);
 
     //############# wave 15 ##################
     Prejudge(410 - 387, 15);
@@ -220,8 +213,9 @@ int main()
     MyRoofPao(8.45, 8.45);
     Until(1215 - 387);
     MyRoofPao(8.9, 8.9);
-    Until(1215 + ICE3() - 298);
+    Delay(387 + 210 - 298);
     Coffee();
+    Ice3(298);
 
     //############# wave 16 ##################
     Prejudge(410 - 387, 16);
@@ -230,8 +224,9 @@ int main()
     MyRoofPao(8.45, 8.45);
     Until(1200 - 387);
     MyRoofPao(8.9, 8.8);
-    Until(1200 + ICE3() - 298);
+    Delay(387 + 210 - 298);
     Coffee();
+    Ice3(298);
 
     //############# wave 17 ##################
     Prejudge(410 - 387, 17);

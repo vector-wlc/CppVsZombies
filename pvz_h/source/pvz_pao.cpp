@@ -10,6 +10,7 @@ namespace pvz
 std::map<GRID, PaoOperator::PAO_INFO> PaoOperator::all_pao;
 const PaoOperator::FLY_TIME PaoOperator::fly_time_data[8] = {
     {515, 359}, {499, 362}, {515, 364}, {499, 367}, {515, 369}, {499, 372}, {511, 373}, {511, 373}}; //辅助排序函数
+int PaoOperator::conflict_resolution_type = PaoOperator::COLLECTION;
 
 //得到炮的所有信息，此函数用户不能调用
 void PaoOperator::getAllPaoMessage_userForbidden()
@@ -48,8 +49,6 @@ void PaoOperator::getAllPaoMessage_userForbidden()
         }
     }
 }
-
-int PaoOperator::conflict_resolution_type = PaoOperator::COLLECTION;
 
 PaoOperator::PaoOperator(bool initialize_paolist)
 {
@@ -127,12 +126,8 @@ void PaoOperator::change_pao_message(PaoIterator change_pao, int now_row, int no
 void PaoOperator::setLimitPaoSequence(bool limit)
 {
     limit_pao_sequence = limit;
-    if (limit)
-        for (auto it : paolist)
-            it->second.is_in_sequence = true;
-    else
-        for (auto it : paolist)
-            it->second.is_in_sequence = false;
+    for (auto it : paolist)
+        it->second.is_in_sequence = limit;
 }
 
 void PaoOperator::changePaoMessage(int origin_row, int origin_col, int now_row, int now_col)
@@ -514,9 +509,11 @@ int PaoOperator::get_roof_fly_time(int pao_col, float drop_col)
 void PaoOperator::base_fire_roof_pao(PaoIterator it, int fire_time, int drop_row, float drop_col)
 {
     //时间矫正
+    while (GameClock() < fire_time - 2)
+        Sleep(1);
+
     while (GameClock() < fire_time)
-        if (!g_high_precision)
-            Sleep(1);
+        ;
 
     base_fire_pao(it, fire_time, drop_row, drop_col);
 }
@@ -532,9 +529,10 @@ void PaoOperator::base_fire_roof_paos(std::vector<RP> lst)
     for (const auto &rp : lst)
     {
         //时间矫正
+        while (GameClock() < rp.fire_time - 2)
+            Sleep(1);
         while (GameClock() < rp.fire_time)
-            if (!g_high_precision)
-                Sleep(1);
+            ;
 
         base_fire_pao(rp.it, rp.fire_time, rp.drop_row, rp.drop_col);
     }
@@ -651,7 +649,7 @@ bool PaoOperator::tryRoofPao(const std::vector<PAO> &lst)
                 {
                     e->second.recover_time = fire_time + 3475;
                     roof_pao_list[success_num] = {e, drop_grid.row, drop_grid.col, fire_time};
-                    success_num++;
+                    ++success_num;
                     break;
                 }
             }

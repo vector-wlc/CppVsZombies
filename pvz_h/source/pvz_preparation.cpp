@@ -21,6 +21,20 @@ CvZPreparation::CvZPreparation()
 
 CvZPreparation::~CvZPreparation()
 {
+    // 输出main退出的一些提示信息
+    if (!g_error_exit)
+    {
+        std::string str = "\t!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\
+    \t请注意：main 函数已退出，如有自己创建的对象，请检查是否使用 pvz::WaitGameEnd() 来保护这些对象\n\n\
+    \t此外即使没有创建对象，也推荐使用 pvz::WaitGameEnd() 来避免一些不可预料的运行异常\n\n\
+    \t!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n";
+    
+#ifndef GBK
+        UTF8ToGBK(str);
+#endif
+        std::printf(str.c_str());
+    }
+
     //当游戏未结束
     while (GameUi() == 3 && !g_error_exit)
         Sleep(1000);

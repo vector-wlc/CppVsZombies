@@ -1,6 +1,7 @@
 {
     "C_Cpp.errorSquiggles": "Enabled",
     "files.associations": {
+        "*.m": "matlab",
         "algorithm": "cpp",
         "chrono": "cpp",
         "cmath": "cpp",
@@ -63,7 +64,8 @@
         "random": "cpp",
         "xtree": "cpp",
         "*.tcc": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "concepts": "cpp"
     },
     "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools"
 }

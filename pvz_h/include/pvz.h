@@ -3,7 +3,7 @@
 
 /*
  * 作者：向量
- * 日期：2019-08-11
+ * 日期：2019-12-2
  * 摘要：键控框架：C++ vs. Zombies 本文件包含常用接口，如需了解全部，请浏览 libpvz.h
  * 命名格式：类的私有成员函数命名方式全部为下划线，公有成员为小驼峰命名规则，普通函数为大驼峰命名规则
  */
@@ -14,28 +14,28 @@
 
 #include "libpvz.h"
 
-using pvz::CancelAutoExit;	//取消自动退出机制
-using pvz::Card;			  //用卡
-using pvz::Delay;			  //时间延迟
+using pvz::CancelAutoExit;    //取消自动退出机制
+using pvz::Card;              //用卡
+using pvz::Delay;             //时间延迟
 using pvz::dian_cai_placer;   //放置垫材对象
-using pvz::FixNut;			  //修补坚果类
-using pvz::ice_filler;		  //存冰对象
-using pvz::item_collector;	//自动收集
-using pvz::KeyConnect;		  //键盘指定操作
-using pvz::KeyDown;			  //检测键盘是否按下
-using pvz::nut_fixer;		  //修补坚果对象
-using pvz::nv_pu_mi_ji;		  //女仆秘籍对象
-using pvz::OpenExamine;		  //开启检查
-using pvz::OpenHighPrecision; //开启高精度
-using pvz::PaoOperator;		  //炮操作类
-using pvz::Prejudge;		  //时间预判
+using pvz::FixNut;            //修补坚果类
+using pvz::Ice3;              //冰三
+using pvz::ice_filler;        //存冰对象
+using pvz::item_collector;    //自动收集
+using pvz::KeyConnect;        //键盘指定操作
+using pvz::KeyDown;           //检测键盘是否按下
+using pvz::nut_fixer;         //修补坚果对象
+using pvz::nv_pu_mi_ji;       //女仆秘籍对象
+using pvz::OpenExamine;       //开启检查
+using pvz::PaoOperator;       //炮操作类
+using pvz::Prejudge;          //时间预判
 using pvz::RunningInThread;   //创建子线程
-using pvz::SelectCards;		  //选卡
-using pvz::Shovel;			  //铲除
-using pvz::Until;			  //等待时间到
-using pvz::wave;			  //波数
-using pvz::wave_in;			  // 波数判定
-using pvz::wave_not_in;		  //波数判定
+using pvz::SelectCards;       //选卡
+using pvz::Shovel;            //铲除
+using pvz::Until;             //等待时间到
+using pvz::wave;              //波数
+using pvz::wave_in;           // 波数判定
+using pvz::wave_not_in;       //波数判定
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //以下函数是为了兼容 CvZ 之前的版本，现已不推荐使用
