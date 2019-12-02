@@ -34,22 +34,22 @@ void Prejudge(int t, int w)
     {
         //等待下一波
         while (NowWave() < (wave - 1))
-                Sleep(1);
+            Sleep(1);
 
         //如果是大波
         if (wave == 10 || wave == 20)
         {
             while (Countdown() > 4)
-                    Sleep(1);
+                Sleep(1);
 
             while (HugeWaveCountdown() > base_time)
-                    Sleep(1);
+                Sleep(1);
             zombie_refresh_time = HugeWaveCountdown() + GameClock();
         }
         else
         {
             while (Countdown() > base_time)
-                    Sleep(1);
+                Sleep(1);
             zombie_refresh_time = Countdown() + GameClock();
         }
     }
@@ -122,34 +122,37 @@ void Until(int time)
 
 void Ice3(int delay_time)
 {
-	RunningInThread([=]() {
-		int ice3_time = delay_time + GameClock();
-		Sleep((delay_time - 90) * 10);
+    RunningInThread([=]() {
+        int ice3_time = delay_time + GameClock();
+        Sleep((delay_time - 90) * 10);
 
-		PlantMemory ice;
-		int ice_index;
-		int count_max = ice.countMax();
-		for (int index = 0; index < count_max; ++index)
-		{
-			ice.setIndex(index);
-			// 寻找目标寒冰菇
-			if (ice.type() == 14 && ice.status() == 2)
-			{
-				ice_index = index;
-				break;
-			}
-		}
+        PlantMemory ice;
+        int ice_index;
+        int count_max = ice.countMax();
+        for (ice_index = 0; ice_index < count_max; ++ice_index)
+        {
+            ice.setIndex(ice_index);
+            // 寻找目标寒冰菇
+            if (ice.type() == 14 && ice.status() == 2)
+            {
+                break;
+            }
+        }
 
-		// 写入四次数据
-		for (int i = 0; i < 4; ++i)
-		{
-			Sleep(20);
-			int clock = GameClock();
-			while (clock == GameClock())
-				;
-			WriteMemory<int>(ice3_time - GameClock() + 1, g_mainobject + 0xAC, 0x50 + 0x14C * ice_index);
-		}
-	});
+        int plant_offset = ReadMemory<int>(g_mainobject + 0xAC);
+
+        // 写入四次数据
+        for (int i = 0; i < 4; ++i)
+        {
+            Sleep(20);
+            int clock = GameClock();
+            while (clock == GameClock())
+                ;
+            int adjust_countdown = ice3_time - GameClock() + 1;
+            if (adjust_countdown != ice.activeCountdown())
+                WriteMemory<int>(adjust_countdown, plant_offset + 0x50 + 0x14C * ice_index);
+        }
+    });
 }
 
 } // namespace pvz
