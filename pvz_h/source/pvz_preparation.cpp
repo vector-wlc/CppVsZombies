@@ -1,3 +1,11 @@
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \pvz_h\source\pvz_preparation.cpp
+ * @Date: 2019-10-10 23:47:03
+ * @LastEditTime : 2020-01-03 15:09:48
+ * @Description: 程序进入 main 和退出 main 的一些准备
+ */
 
 #include "libpvz.h"
 #include "pvz_global.h"
@@ -21,40 +29,23 @@ CvZPreparation::CvZPreparation()
 
 CvZPreparation::~CvZPreparation()
 {
-    // 输出main退出的一些提示信息
-    if (!g_error_exit)
-    {
-        std::string str = "\t!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\
+    std::string str = "\t!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\
     \t请注意：main 函数已退出，如有自己创建的对象，请检查是否使用 pvz::WaitGameEnd() 来保护这些对象\n\n\
     \t此外即使没有创建对象，也推荐使用 pvz::WaitGameEnd() 来避免一些不可预料的运行异常\n\n\
     \t!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n";
-    
 #ifndef GBK
-        UTF8ToGBK(str);
+    UTF8ToGBK(str);
 #endif
-        std::printf(str.c_str());
-    }
+    std::printf(str.c_str());
 
     //当游戏未结束
-    while (GameUi() == 3 && !g_error_exit)
+    while (GameUi() == 3)
         Sleep(1000);
     //恢复游戏原来的内存信息
     pao_cvz.setResolveConflictType(PaoOperator::COLLECTION);
 
     if (g_handle != nullptr)
         CloseHandle(g_handle);
-}
-
-//检测运行环境，游戏退出战斗界面时，程序自动退出
-void CvZPreparation::exit_thread()
-{
-    while (GameUi() == 2)
-        Sleep(1000);
-    while (GameUi() == 3)
-        Sleep(200);
-
-    if (g_auto_exit)
-        exit(0);
 }
 
 //获得游戏窗口及进程
@@ -84,37 +75,41 @@ void CvZPreparation::get_pvz_window_dpi()
 
 void CvZPreparation::some_preparations()
 {
+    bool is_print = true;
     //等待游戏进入选卡或战斗界面
-    for (int i = 0; (GameUi() != 2 && GameUi() != 3); i++)
+    while (GameUi() != 2 && GameUi() != 3)
     {
-        if (0 == i)
+        if (is_print)
+        {
             std::printf("Waiting to enter the card selection or combat interface...\n\n");
-        Sleep(500);
+            is_print = false;
+        }
+        Sleep(10);
     }
-    Sleep(500);
-    //等待点击继续游戏
-    for (int i = 0; (ReadMemory<bool>(g_pvzbase + 0x320, 0x94, 0x54)); i++)
-    {
-        if (0 == i)
-            std::printf("Waiting for the click to continue the game...\n\n");
-        Sleep(500);
-    }
-    //游戏退出战斗界面，程序自动退出
-    RunningInThread(&CvZPreparation::exit_thread, this);
 
-    std::printf("\t##############################\n\n\t\tGame Start!\n\n\t##############################\n\n");
+    is_print = true;
+    //等待点击继续游戏
+    while (ReadMemory<bool>(g_pvzbase + 0x320, 0x94, 0x54))
+    {
+        if (is_print)
+        {
+            std::printf("Waiting for the click to continue the game...\n\n");
+            is_print = false;
+        }
+        Sleep(10);
+    }
 
     //获取一些内存地址
     g_mainobject = ReadMemory<int>(g_pvzbase + 0x768);
     g_mouse_offset = ReadMemory<int>(g_pvzbase + 0x320);
     g_scene = ReadMemory<int>(g_mainobject + 0x554C);
-
-    //自动获取炮列表
-    pao_cvz.getAllPaoMessage_userForbidden();
+    
     pao_cvz.resetPaoList();
     pao_cvz.setResolveConflictType(PaoOperator::COLLECTION);
 
     //自动开启自动收集线程
     item_collector.start();
+
+    std::printf("\t##############################\n\n\t\tGame Start!\n\n\t##############################\n\n");
 }
 } // namespace pvz

@@ -1,4 +1,11 @@
-
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \pvz_h\source\pvz_auto_thread.cpp
+ * @Date: 2019-10-10 23:46:10
+ * @LastEditTime : 2019-12-31 23:09:18
+ * @Description: 自动操作类的实现
+ */
 
 #include "libpvz.h"
 #include "pvz_error.h"
@@ -54,7 +61,7 @@ void FillIce::start(const std::vector<GRID> &lst)
 
 void FillIce::use_ice()
 {
-	std::vector<int> ice_seed_index; 
+	std::vector<int> ice_seed_index;
 
 	WaitGameStart();
 
@@ -111,11 +118,16 @@ void FillIce::use_ice()
 					//由于花盆比较特殊，在此不考虑天台自动补花盆情况
 
 					Card(ice_seed_index[i] + 1, grid_lst[j].row, grid_lst[j].col);
-					ice_plant_indexs[j] = 1;
+
+					//更新植物对象序列
+					int next_plant_index = PlantMemory::nextIndex();
+					while (next_plant_index == PlantMemory::nextIndex())
+						Sleep(1);
+					ice_plant_indexs[j] = next_plant_index;
+
 					break;
 				}
 			}
-			Sleep(10);
 		}
 	}
 }
@@ -588,7 +600,7 @@ void CollectItem::start_auto_collect() const
 
 		if (!uncollect_item_count)
 		{
-			Sleep(200);
+			Sleep(interval_);
 			continue;
 		}
 
@@ -597,7 +609,7 @@ void CollectItem::start_auto_collect() const
 			if (GameUi() != 3)
 				break;
 			while (GamePaused() || MouseInGame())
-				Sleep(100);
+				Sleep(interval_);
 			item.setIndex(i);
 			if (!item.isDisappeared() && !item.isCollected())
 			{

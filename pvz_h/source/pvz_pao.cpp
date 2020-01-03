@@ -1,3 +1,11 @@
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \pvz_h\source\pvz_pao.cpp
+ * @Date: 2019-10-10 23:44:07
+ * @LastEditTime : 2020-01-03 13:51:59
+ * @Description: 炮操作类的实现
+ */
 
 #include "libpvz.h"
 #include "pvz_error.h"
@@ -5,21 +13,14 @@
 
 namespace pvz
 {
-
-// 炮操作对象静态变量初始化
 std::map<GRID, PaoOperator::PAO_INFO> PaoOperator::all_pao;
 const PaoOperator::FLY_TIME PaoOperator::fly_time_data[8] = {
-    {515, 359}, {499, 362}, {515, 364}, {499, 367}, {515, 369}, {499, 372}, {511, 373}, {511, 373}}; //辅助排序函数
+    {515, 359}, {499, 362}, {515, 364}, {499, 367}, {515, 369}, {499, 372}, {511, 373}, {511, 373}};
 int PaoOperator::conflict_resolution_type = PaoOperator::COLLECTION;
 
-//得到炮的所有信息，此函数用户不能调用
-void PaoOperator::getAllPaoMessage_userForbidden()
+//得到炮的所有信息
+void PaoOperator::get_all_pao_message()
 {
-    static bool forbidden = false;
-    if (forbidden)
-        PrintError("用户不允许调用 getAllPaoMessage_userForbidden");
-    forbidden = true;
-
     PlantMemory cannon;
     std::pair<GRID, PAO_INFO> pao_message;
     int plant_count_max = cannon.countMax();
@@ -27,7 +28,7 @@ void PaoOperator::getAllPaoMessage_userForbidden()
     int now_time = GameClock();
 
     //遍历场上所有炮的信息
-    for (int i = 0; i < plant_count_max; i++)
+    for (int i = 0; i < plant_count_max; ++i)
     {
         cannon.setIndex(i);
         if (cannon.type() == 47 && !cannon.isCrushed() && !cannon.isDisappeared())
@@ -50,10 +51,8 @@ void PaoOperator::getAllPaoMessage_userForbidden()
     }
 }
 
-PaoOperator::PaoOperator(bool initialize_paolist)
+PaoOperator::PaoOperator()
 {
-    if (initialize_paolist)
-        resetPaoList();
     limit_pao_sequence = true;
     nowpao = 0;
 }
@@ -86,25 +85,19 @@ void PaoOperator::setResolveConflictType(int type)
         WriteMemory<short>(30, 0x4663F9);
 }
 
-void PaoOperator::change_pao_message(PaoIterator change_pao, int now_row, int now_col)
+void PaoOperator::setLimitPaoSequence(bool limit)
+{
+    limit_pao_sequence = limit;
+    for (auto it : paolist)
+        it->second.is_in_sequence = limit;
+}
+
+void PaoOperator::add_pao_message(int row, int col)
 {
     PlantMemory cannon;
     int cannon_status = 0;
     std::pair<GRID, PAO_INFO> new_pao;
-
-    bool is_shovel_and_plant_pao = (change_pao != all_pao.end());
-
-    //如果是铲种炮
-    if (is_shovel_and_plant_pao)
-    {
-        new_pao = *change_pao;
-        all_pao.erase(change_pao);
-    }
-
-    Sleep(20);
-    new_pao.second.index = GetPlantIndex(now_row, now_col, 47);
-    if (new_pao.second.index == -1)
-        PrintError("请检查 (%d, %d) 是否为炮", now_row, now_col);
+    new_pao.second.index = GetPlantIndex(row, col, 47);
 
     int now_time = GameClock();
     cannon.setIndex(new_pao.second.index);
@@ -116,33 +109,95 @@ void PaoOperator::change_pao_message(PaoIterator change_pao, int now_row, int no
         new_pao.second.recover_time = now_time + 3475;
     else //如果炮不能用，则恢复时间为现在时间 + 倒计时 + 125
         new_pao.second.recover_time = now_time + cannon.statusCountdown() + 125;
+    new_pao.first.row = row;
+    new_pao.first.col = col;
 
-    new_pao.first.row = now_row;
-    new_pao.first.col = now_col;
+    // 替换掉被铲除的炮
+    for (auto it = all_pao.begin(); it != all_pao.end(); ++it)
+    {
+        if (it->second.is_shoveled)
+        {
+            new_pao.second.is_in_list = it->second.is_in_list;
+            new_pao.second.is_in_sequence = it->second.is_in_sequence;
+            all_pao.erase(it);
+            break;
+        }
+    }
 
     all_pao.insert(new_pao);
 }
 
-void PaoOperator::setLimitPaoSequence(bool limit)
+void PaoOperator::plant_pao(int row, int col)
 {
-    limit_pao_sequence = limit;
-    for (auto it : paolist)
-        it->second.is_in_sequence = limit;
+    int ymjnp = GetSeedIndex(47) + 1;
+    int ymts = GetSeedIndex(34) + 1;
+    SeedMemory cannon_seed(ymjnp - 1);
+    SeedMemory pitcher_seed(ymts - 1);
+
+    int now_time = GameClock();
+
+    //种植玉米投手
+    for (int i = col; i < col + 2; ++i)
+    {
+        //如果有需要种植玉米炮的地方
+        if (GetPlantIndex(row, i, 34) == -1)
+        {
+            //种植玉米投手
+            while (!pitcher_seed.isUsable())
+                Sleep(1);
+            Card(ymts, row, i);
+
+            while (pitcher_seed.isUsable())
+                Sleep(1);
+        }
+    }
+
+    //种植玉米加农炮
+    while (!cannon_seed.isUsable())
+        Sleep(1);
+    Card(ymjnp, row, col);
+
+    Sleep(20);
+    add_pao_message(row, col);
 }
 
 void PaoOperator::changePaoMessage(int origin_row, int origin_col, int now_row, int now_col)
 {
-    auto change_pao = all_pao.find(GRID(origin_row, origin_col));
-    //参数为 0 是偷炮
-    if (origin_row != 0 && origin_col != 0 && change_pao == all_pao.end())
-        PrintError("请检查原来位置 (%d, %d) 是否为炮", origin_row, origin_col);
+    // 参数为 0 不进行删除操作
+    if (origin_row != 0 && origin_col != 0)
+    {
+        auto change_pao = all_pao.find(GRID(origin_row, origin_col));
 
-    RunningInThread(change_pao_message, change_pao, now_row, now_col);
+        if (change_pao != all_pao.end())
+        {
+            change_pao->second.is_shoveled = true;
+        }
+        else
+        {
+            PrintError("请检查原来位置 (%d, %d) 是否为炮", origin_row, origin_col);
+        }
+    }
+
+    //参数为 0 不进行增添操作
+    if (now_row != 0 && now_col != 0)
+    {
+        RunningInThread([=]() {
+            Sleep(20);
+            add_pao_message(now_row, now_col);
+        });
+    }
 }
 
 //自动识别炮列表
 void PaoOperator::resetPaoList()
 {
+    static bool is_get_all_pao_message = false;
+    if (!is_get_all_pao_message)
+    {
+        get_all_pao_message();
+        is_get_all_pao_message = true;
+    }
+
     //清除所有有关于本对象的炮列表
     for (const auto &e : paolist)
     {
@@ -156,7 +211,7 @@ void PaoOperator::resetPaoList()
     //寻找不在炮列表中的炮
     for (auto it = all_pao.begin(); it != all_pao.end(); it++)
     {
-        if (!(it->second.is_in_list))
+        if (!(it->second.is_in_list) || !(it->second.is_shoveled))
         {
             it->second.is_in_list = true;
             it->second.is_in_sequence = limit_pao_sequence;
@@ -196,7 +251,7 @@ void PaoOperator::resetPaoList(const std::vector<GRID> &lst)
     {
         //在总炮信息里面找不到则报错
         it = all_pao.find(pao_grid);
-        if (it == all_pao.end())
+        if (it == all_pao.end() || it->second.is_shoveled)
             PrintError("请检查 (%d, %d) 是否为炮", pao_grid.row, pao_grid.col);
 
         //如果此炮在其它炮列表中
@@ -361,7 +416,9 @@ void PaoOperator::pao(int row, float col)
     g_mu.unlock();
 
     if (g_examine_level != CVZ_NO)
+    {
         pao_examine(paolist[next_pao], now_time, row, col);
+    }
 
     base_fire_pao(paolist[next_pao], now_time, row, col);
 }
@@ -397,6 +454,8 @@ bool PaoOperator::tryPao(int row, float col)
     //寻找符合条件的炮
     for (const auto e : paolist)
     {
+        if (e->second.is_shoveled)
+            continue;
         //如果炮可用
         if (e->second.recover_time <= now_time)
         {
@@ -425,6 +484,8 @@ bool PaoOperator::tryPao(const std::vector<PAO> &lst)
         //寻找符合条件的炮
         for (const auto e : paolist)
         {
+            if (e->second.is_shoveled)
+                continue;
             //如果炮可用
             if (e->second.recover_time <= now_time)
             {
@@ -584,7 +645,7 @@ void PaoOperator::roofPao(const std::vector<PAO> &lst)
             pao_examine(paolist[roof_nowpao], fire_time, drop_grid.row, drop_grid.col);
         paolist[roof_nowpao]->second.recover_time = fire_time + 3475;
         roof_pao_list[num] = {paolist[roof_nowpao], drop_grid.row, drop_grid.col, fire_time};
-        num++;
+        ++num;
         roof_nowpao = (roof_nowpao + 1) % paolist.size();
     }
 
@@ -604,6 +665,8 @@ bool PaoOperator::tryRoofPao(int row, float col)
     //寻找符合条件的炮
     for (const auto e : paolist)
     {
+        if (e->second.is_shoveled)
+            continue;
         fire_time = 387 - get_roof_fly_time(e->first.col, col) + now_time;
         //如果炮可用
         if (e->second.recover_time <= fire_time)
@@ -638,8 +701,10 @@ bool PaoOperator::tryRoofPao(const std::vector<PAO> &lst)
     for (const auto &drop_grid : lst)
     {
         //寻找符合条件的炮
-        for (const auto e : paolist)
+        for (const auto &e : paolist)
         {
+            if (e->second.is_shoveled)
+                continue;
             fire_time = 387 - get_roof_fly_time(e->first.col, drop_grid.col) + now_time;
             //如果炮可用
             if (e->second.recover_time <= fire_time)
@@ -709,12 +774,6 @@ void PaoOperator::rawRoofPao(const std::vector<RAWPAO> &lst)
 //铲种炮
 void PaoOperator::shovel_and_plant_pao(int row, int col, int move_col, PaoIterator it, int delay_time)
 {
-    //得到春哥，玉米投手的对象序列
-    int ymjnp = GetSeedIndex(47) + 1;
-    int ymts = GetSeedIndex(34) + 1;
-    SeedMemory cannon(ymjnp - 1);
-    SeedMemory pitcher(ymts - 1);
-
     PlantMemory shovel_pao(it->second.index);
 
     //等待炮使用
@@ -727,6 +786,9 @@ void PaoOperator::shovel_and_plant_pao(int row, int col, int move_col, PaoIterat
     //铲炮
     Shovel(row, col);
 
+    //在这里不能直接释放 it 的内存，虽然炮已经不存在了，
+    it->second.is_shoveled = true;
+
     int now_time = GameClock();
 
     //等待一些时间
@@ -735,27 +797,24 @@ void PaoOperator::shovel_and_plant_pao(int row, int col, int move_col, PaoIterat
     if (delay_time == 0)
         Sleep(20);
 
-    //种植玉米投手
-    for (int i = col; i < col + 2; i++)
-    {
-        //如果有需要种植玉米炮的地方
-        if (GetPlantIndex(row, i + move_col, 34) == -1)
-        {
-            //种植玉米投手
-            while (!pitcher.isUsable())
-                Sleep(1);
-            Card(ymts, row, i + move_col);
-            Sleep(20);
-        }
-    }
+    plant_pao(row, col + move_col);
+}
 
-    //种植玉米加农炮
-    while (!cannon.isUsable())
-        Sleep(1);
-    Card(ymjnp, row, col + move_col);
+void PaoOperator::shovelPao(int row, int col)
+{
+    auto it = all_pao.find(GRID(row, col));
 
-    //更新相关炮的信息
-    change_pao_message(it, row, col + move_col);
+    //是否为炮？
+    if (it == all_pao.end())
+        PrintError("请检查(%d, %d)是否为炮", row, col);
+
+    if (it->second.is_in_sequence)
+        PrintError("(%d, %d)被炮序限制，不允许对其进行铲除操作", row, col);
+
+    //在这里不能直接释放 it 的内存，虽然炮已经不存在了，
+    it->second.is_shoveled = true;
+
+    Shovel(row, col);
 }
 
 void PaoOperator::fixPao(int row, int col, int move_col, int delay_time)

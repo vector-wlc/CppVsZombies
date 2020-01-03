@@ -1,20 +1,19 @@
-
-/* coding=UTF-8 */
-
 /*
- * 作者：向量
- * 日期：2019-12-2
- * 摘要：包含 CvZ 所有接口
- * 命名格式：类的公有成员函数为小驼峰命名规则，普通函数和类为大驼峰命名规则，
- *		   其他标识符方式均为下划线
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \CppVsZombies\pvz_h\include\libpvz.h
+ * @Date: 2019-12-21 15:19:54
+ * @LastEditTime : 2020-01-02 21:58:19
+ * @Description: PvZ TAS Framework C++ vs. Zombies
+ *               This framework references Python vs. Zombies
+ *               @lmintlcx https://pvz.lmintlcx.com/scripts/pvz.py/
  */
-
 #pragma once
 #ifndef LIBPVZ_H
 #define LIBPVZ_H
 
 #include <cstdio>
-#include <Windows.h>
+#include <windows.h>
 #include <string>
 #include <thread>
 #include <mutex>
@@ -23,117 +22,42 @@
 #include <initializer_list>
 #include <algorithm>
 #include <functional>
-#include <list>
 
 namespace pvz
 {
-//########## structs ###############
-
-//用于储存位置信息
-struct GRID
-{
-	int row;
-	int col;
-
-	GRID() : row(0), col(0) {}
-	GRID(int row_, int col_) : row(row_), col(col_) {}
-	friend const bool operator==(const GRID &grid1, const GRID &grid2)
-	{
-		return grid1.row == grid2.row && grid1.col == grid2.col;
-	}
-
-	friend const bool operator<(const GRID &grid1, const GRID &grid2)
-	{
-		if (grid1.row == grid2.row)
-			return grid1.col < grid2.col;
-		return grid1.row < grid2.row;
-	}
-
-	friend const bool operator>(const GRID &grid1, const GRID &grid2)
-	{
-		if (grid1.row == grid2.row)
-			return grid1.col > grid2.col;
-		return grid1.row > grid2.row;
-	}
-};
-
-//用于选卡函数(根据卡片对象序列选择)
-struct SEED_INDEX
-{
-	int row;
-	int col;
-	bool imitator = false;
-};
-
-//用于选卡函数(根据卡片名称选择)
-struct SEED_NAME
-{
-	std::string seed_name;
-};
-
-//用于铲除函数
-struct SHOVEL
-{
-	int row;
-	float col;
-	bool pumpkin = false;
-};
-
-struct CARD
-{
-	int row;
-	float col;
-};
-
-//用于用卡函数(根据对象序列用卡)
-struct CARD_INDEX
-{
-	int x;
-	int row;
-	float col;
-};
-
-//用于选卡函数(根据名称用卡)
-struct CARD_NAME
-{
-	std::string card_name;
-	int row;
-	float col;
-};
 
 // ########################  assist functions #################
 
 extern int wave;
 
-//模仿 Python 框架  if wave in (...)
 //如果波数在参数范围内
 template <class... Args>
 bool wave_in(Args... args)
 {
-	std::initializer_list<int> lst = {args...};
-	for (auto e : lst)
-		if (e == wave)
-			return true;
-	return false;
+    std::initializer_list<int> lst = {args...};
+    for (auto e : lst)
+        if (e == wave)
+            return true;
+    return false;
 }
 
 //如果波数在不参数范围内
 template <class... Args>
 bool wave_not_in(Args... args)
 {
-	std::initializer_list<int> lst = {args...};
-	for (auto e : lst)
-		if (e == wave)
-			return false;
-	return true;
+    std::initializer_list<int> lst = {args...};
+    for (auto e : lst)
+        if (e == wave)
+            return false;
+    return true;
 }
 
 //使函数在子线程中运行
 template <class FUNC, class... Args>
 inline void RunningInThread(FUNC func, Args... args)
 {
-	std::thread task(func, args...);
-	task.detach();
+    std::thread task(func, args...);
+    task.detach();
 }
 
 //########## memory basic functions ###############
@@ -144,31 +68,36 @@ extern int g_pvzbase;
 extern int g_mouse_offset;
 
 //读取内存函数
+//ReadMemory<data type>(address);
+//此函数有返回值，需要变量接收读取结果
+//使用示例
+//pvz::ReadMemory<int>(0x6A9EC0) -----读取基址
+//pvz::ReadMemory<int>(0x6A9EC0, 0x768) ------读取当前游戏信息和对象
 template <typename T, typename... Args>
 T ReadMemory(Args... args)
 {
-	std::initializer_list<uintptr_t> lst = {static_cast<uintptr_t>(args)...};
-	uintptr_t buff = 0;
-	T result = T();
-	for (auto it = lst.begin(); it != lst.end(); it++)
-		if (it != lst.end() - 1)
-			ReadProcessMemory(g_handle, (const void *)(buff + *it), &buff, sizeof(buff), nullptr);
-		else
-			ReadProcessMemory(g_handle, (const void *)(buff + *it), &result, sizeof(result), nullptr);
-	return result;
+    std::initializer_list<uintptr_t> lst = {static_cast<uintptr_t>(args)...};
+    uintptr_t buff = 0;
+    T result = T();
+    for (auto it = lst.begin(); it != lst.end(); ++it)
+        if (it != lst.end() - 1)
+            ReadProcessMemory(g_handle, (const void *)(buff + *it), &buff, sizeof(buff), nullptr);
+        else
+            ReadProcessMemory(g_handle, (const void *)(buff + *it), &result, sizeof(result), nullptr);
+    return result;
 }
 
 //改写内存函数
 template <typename T, typename... Args>
 void WriteMemory(T value, Args... args)
 {
-	std::initializer_list<uintptr_t> lst = {static_cast<uintptr_t>(args)...};
-	uintptr_t buff = 0;
-	for (auto it = lst.begin(); it != lst.end(); it++)
-		if (it != lst.end() - 1)
-			ReadProcessMemory(g_handle, (const void *)(buff + *it), &buff, sizeof(buff), nullptr);
-		else
-			WriteProcessMemory(g_handle, (void *)(buff + *it), &value, sizeof(value), nullptr);
+    std::initializer_list<uintptr_t> lst = {static_cast<uintptr_t>(args)...};
+    uintptr_t buff = 0;
+    for (auto it = lst.begin(); it != lst.end(); it++)
+        if (it != lst.end() - 1)
+            ReadProcessMemory(g_handle, (const void *)(buff + *it), &buff, sizeof(buff), nullptr);
+        else
+            WriteProcessMemory(g_handle, (void *)(buff + *it), &value, sizeof(value), nullptr);
 }
 
 //########## memory classes ###############
@@ -177,407 +106,407 @@ void WriteMemory(T value, Args... args)
 class AbstractMemory
 {
 protected:
-	int offset; //地址偏移
-	int index;  //对象序列/栈位/序号...
+    int offset; //地址偏移
+    int index;  //对象序列/栈位/序号...
 
 public:
-	AbstractMemory() { offset = index = 0; }
-	//设置对象序列
-	void setIndex(int _index) { index = _index; }
-	//重新得到地址偏移信息
-	virtual void getOffset() = 0;
+    AbstractMemory() { offset = index = 0; }
+    //设置对象序列
+    void setIndex(int _index) { index = _index; }
+    //重新得到地址偏移信息
+    virtual void getOffset() = 0;
 };
 
 //卡片内存信息类
 class SeedMemory : public AbstractMemory
 {
 public:
-	SeedMemory(int _index);
-	SeedMemory();
+    SeedMemory(int _index);
+    SeedMemory();
 
-	virtual void getOffset();
+    virtual void getOffset();
 
-	//返回卡槽数目
-	int slotsCount()
-	{
-		return ReadMemory<int>(offset + 0x24);
-	}
+    //返回卡槽数目
+    int slotsCount()
+    {
+        return ReadMemory<int>(offset + 0x24);
+    }
 
-	//判断卡片是否可用
-	bool isUsable()
-	{
-		return ReadMemory<bool>(offset + 0x70 + 0x50 * index);
-	}
+    //判断卡片是否可用
+    bool isUsable()
+    {
+        return ReadMemory<bool>(offset + 0x70 + 0x50 * index);
+    }
 
-	//返回卡片冷却
-	int CD()
-	{
-		return ReadMemory<int>(offset + 0x4C + index * 0x50);
-	}
+    //返回卡片冷却
+    int CD()
+    {
+        return ReadMemory<int>(offset + 0x4C + index * 0x50);
+    }
 
-	//返回卡片总冷却时间
-	int initialCD()
-	{
-		return ReadMemory<int>(offset + 0x50 + index * 0x50);
-	}
+    //返回卡片总冷却时间
+    int initialCD()
+    {
+        return ReadMemory<int>(offset + 0x50 + index * 0x50);
+    }
 
-	//返回模仿者卡片类型
-	int imitatorType()
-	{
-		return ReadMemory<int>(offset + 0x60 + index * 0x50);
-	}
+    //返回模仿者卡片类型
+    int imitatorType()
+    {
+        return ReadMemory<int>(offset + 0x60 + index * 0x50);
+    }
 
-	//返回卡片类型
-	int type()
-	{
-		return ReadMemory<int>(offset + 0x5C + index * 0x50);
-	}
+    //返回卡片类型
+    int type()
+    {
+        return ReadMemory<int>(offset + 0x5C + index * 0x50);
+    }
 };
 
 class PlantMemory : public AbstractMemory
 {
 public:
-	PlantMemory(int _index);
-	PlantMemory();
+    PlantMemory(int _index);
+    PlantMemory();
 
-	virtual void getOffset();
+    virtual void getOffset();
 
-	//返回当前最大植物数目
-	static int countMax()
-	{
-		return ReadMemory<int>(g_mainobject + 0xB0);
-	}
+    //返回当前最大植物数目
+    static int countMax()
+    {
+        return ReadMemory<int>(g_mainobject + 0xB0);
+    }
 
-	//返回下一个植物的栈位/编号/对象序列
-	static int nextIndex()
-	{
-		return ReadMemory<int>(g_mainobject + 0xB8);
-	}
+    //返回下一个植物的栈位/编号/对象序列
+    static int nextIndex()
+    {
+        return ReadMemory<int>(g_mainobject + 0xB8);
+    }
 
-	//返回植物所在行 数值范围：[0,5]
-	int row()
-	{
-		return ReadMemory<int>(offset + 0x1C + 0x14C * index);
-	}
+    //返回植物所在行 数值范围：[0,5]
+    int row()
+    {
+        return ReadMemory<int>(offset + 0x1C + 0x14C * index);
+    }
 
-	//返回植物所在列 数值范围：[0,8]
-	int col()
-	{
-		return ReadMemory<int>(offset + 0x28 + 0x14C * index);
-	}
+    //返回植物所在列 数值范围：[0,8]
+    int col()
+    {
+        return ReadMemory<int>(offset + 0x28 + 0x14C * index);
+    }
 
-	//判断植物是否消失
-	bool isDisappeared()
-	{
-		return ReadMemory<bool>(offset + 0x141 + 0x14C * index);
-	}
+    //判断植物是否消失
+    bool isDisappeared()
+    {
+        return ReadMemory<bool>(offset + 0x141 + 0x14C * index);
+    }
 
-	//判断植物是否被压扁
-	bool isCrushed()
-	{
-		return ReadMemory<bool>(offset + 0x142 + 0x14C * index);
-	}
+    //判断植物是否被压扁
+    bool isCrushed()
+    {
+        return ReadMemory<bool>(offset + 0x142 + 0x14C * index);
+    }
 
-	//返回植物类型 与图鉴顺序一样，从0开始
-	int type()
-	{
-		return ReadMemory<int>(offset + 0x24 + 0x14C * index);
-	}
+    //返回植物类型 与图鉴顺序一样，从0开始
+    int type()
+    {
+        return ReadMemory<int>(offset + 0x24 + 0x14C * index);
+    }
 
-	//返回植物横坐标 数值范围：[0,800]
-	int abscissa()
-	{
-		return ReadMemory<int>(offset + 0x8 + 0x14C * index);
-	}
+    //返回植物横坐标 数值范围：[0,800]
+    int abscissa()
+    {
+        return ReadMemory<int>(offset + 0x8 + 0x14C * index);
+    }
 
-	//返回植物纵坐标
-	int ordinate()
-	{
-		return ReadMemory<int>(offset + 0xC + 0x14C * index);
-	}
-	//返回植物血量
-	int hp()
-	{
-		return ReadMemory<int>(offset + 0x40 + 0x14C * index);
-	}
+    //返回植物纵坐标
+    int ordinate()
+    {
+        return ReadMemory<int>(offset + 0xC + 0x14C * index);
+    }
+    //返回植物血量
+    int hp()
+    {
+        return ReadMemory<int>(offset + 0x40 + 0x14C * index);
+    }
 
-	int activeCountdown()
-	{
-		return ReadMemory<int>(offset + 0x50 + 0x14C * index);
-	}
+    int activeCountdown()
+    {
+        return ReadMemory<int>(offset + 0x50 + 0x14C * index);
+    }
 
-	//发射子弹倒计时，该倒计时不论是否有僵尸一直不断减小并重置
-	int bulletCountdown()
-	{
-		return ReadMemory<int>(offset + 0x58 + 0x14C * index);
-	}
+    //发射子弹倒计时，该倒计时不论是否有僵尸一直不断减小并重置
+    int bulletCountdown()
+    {
+        return ReadMemory<int>(offset + 0x58 + 0x14C * index);
+    }
 
-	//子弹发射倒计时，该倒计时只在有僵尸时才一直不断减小并重置
-	int countdownBullet()
-	{
-		return ReadMemory<int>(offset + 0x90 + 0x14C * index);
-	}
+    //子弹发射倒计时，该倒计时只在有僵尸时才一直不断减小并重置
+    int countdownBullet()
+    {
+        return ReadMemory<int>(offset + 0x90 + 0x14C * index);
+    }
 
-	//返回植物的状态
-	//35：空炮
-	//36：正在装填
-	//37：准备就绪
-	//38：正在发射
-	int status()
-	{
-		return ReadMemory<int>(offset + 0x3C + 0x14C * index);
-	}
+    //返回植物的状态
+    //35：空炮
+    //36：正在装填
+    //37：准备就绪
+    //38：正在发射
+    int status()
+    {
+        return ReadMemory<int>(offset + 0x3C + 0x14C * index);
+    }
 
-	//植物属性倒计时
-	int statusCountdown()
-	{
-		return ReadMemory<int>(offset + 0x54 + 0x14C * index);
-	}
+    //植物属性倒计时
+    int statusCountdown()
+    {
+        return ReadMemory<int>(offset + 0x54 + 0x14C * index);
+    }
 };
 
 class ZombieMemory : public AbstractMemory
 {
 public:
-	ZombieMemory(int _index);
-	ZombieMemory();
+    ZombieMemory(int _index);
+    ZombieMemory();
 
-	virtual void getOffset();
+    virtual void getOffset();
 
-	//返回僵尸最大数目
-	static int countMax()
-	{
-		return ReadMemory<int>(g_mainobject + 0x94);
-	}
+    //返回僵尸最大数目
+    static int countMax()
+    {
+        return ReadMemory<int>(g_mainobject + 0x94);
+    }
 
-	//判断僵尸是否存在
-	bool isExist()
-	{
-		return ReadMemory<short>(offset + 0x15A + 0x15C * index);
-	}
+    //判断僵尸是否存在
+    bool isExist()
+    {
+        return ReadMemory<short>(offset + 0x15A + 0x15C * index);
+    }
 
-	//返回僵尸所在行数 范围：[0,5]
-	int row()
-	{
-		return ReadMemory<int>(offset + 0x1C + 0x15C * index);
-	}
+    //返回僵尸所在行数 范围：[0,5]
+    int row()
+    {
+        return ReadMemory<int>(offset + 0x1C + 0x15C * index);
+    }
 
-	//返回僵尸所在横坐标 范围：[0,800]
-	float abscissa()
-	{
-		return ReadMemory<float>(offset + 0x2C + 0x15C * index);
-	}
+    //返回僵尸所在横坐标 范围：[0,800]
+    float abscissa()
+    {
+        return ReadMemory<float>(offset + 0x2C + 0x15C * index);
+    }
 
-	//返回僵尸纵坐标
-	float ordinate()
-	{
-		return ReadMemory<float>(offset + 0x30 + 0x15C * index);
-	}
+    //返回僵尸纵坐标
+    float ordinate()
+    {
+        return ReadMemory<float>(offset + 0x30 + 0x15C * index);
+    }
 
-	//返回僵尸类型 与图鉴顺序一样，从0开始
-	int type()
-	{
-		return ReadMemory<int>(offset + 0x24 + 0x15C * index);
-	}
+    //返回僵尸类型 与图鉴顺序一样，从0开始
+    int type()
+    {
+        return ReadMemory<int>(offset + 0x24 + 0x15C * index);
+    }
 
-	//返回僵尸本体当前血量
-	int hp()
-	{
-		return ReadMemory<int>(offset + 0xC8 + 0x15C * index);
-	}
+    //返回僵尸本体当前血量
+    int hp()
+    {
+        return ReadMemory<int>(offset + 0xC8 + 0x15C * index);
+    }
 
-	//返回僵尸一类饰品当前血量
-	int oneHp()
-	{
-		return ReadMemory<int>(offset + 0xD0 + 0x15C * index);
-	}
+    //返回僵尸一类饰品当前血量
+    int oneHp()
+    {
+        return ReadMemory<int>(offset + 0xD0 + 0x15C * index);
+    }
 
-	//返回僵尸二类饰品血量
-	int twoHp()
-	{
-		return ReadMemory<int>(offset + 0xDC + 0x15C * index);
-	}
+    //返回僵尸二类饰品血量
+    int twoHp()
+    {
+        return ReadMemory<int>(offset + 0xDC + 0x15C * index);
+    }
 
-	//判断僵尸是否啃食
-	bool isEat()
-	{
-		return ReadMemory<bool>(offset + 0x51 + 0x15C * index);
-	}
+    //判断僵尸是否啃食
+    bool isEat()
+    {
+        return ReadMemory<bool>(offset + 0x51 + 0x15C * index);
+    }
 
-	//返回僵尸状态
-	int status()
-	{
-		return ReadMemory<int>(offset + 0x28 + 0x15C * index);
-	}
+    //返回僵尸状态
+    int status()
+    {
+        return ReadMemory<int>(offset + 0x28 + 0x15C * index);
+    }
 
-	//判断僵尸是否死亡
-	bool isDead()
-	{
-		return status() == 1;
-	}
+    //判断僵尸是否死亡
+    bool isDead()
+    {
+        return status() == 1;
+    }
 
-	//判断巨人是否举锤
-	bool isHammering()
-	{
-		return status() == 70;
-	}
+    //判断巨人是否举锤
+    bool isHammering()
+    {
+        return status() == 70;
+    }
 
-	//判断僵尸是否隐形
-	bool isStealth()
-	{
-		return ReadMemory<bool>(offset + 0x18 + 0x15C * index);
-	}
+    //判断僵尸是否隐形
+    bool isStealth()
+    {
+        return ReadMemory<bool>(offset + 0x18 + 0x15C * index);
+    }
 
-	//变化量(前进的舞王和减速的冰车等的前进速度)
-	float speed()
-	{
-		return ReadMemory<float>(offset + 0x34 + 0x15C * index);
-	}
+    //变化量(前进的舞王和减速的冰车等的前进速度)
+    float speed()
+    {
+        return ReadMemory<float>(offset + 0x34 + 0x15C * index);
+    }
 
-	//僵尸已存在时间
-	int existTime()
-	{
-		return ReadMemory<int>(offset + 0x60 + 0x15C * index);
-	}
+    //僵尸已存在时间
+    int existTime()
+    {
+        return ReadMemory<int>(offset + 0x60 + 0x15C * index);
+    }
 
-	//僵尸属性倒计时
-	int statusCountdown()
-	{
-		return ReadMemory<int>(offset + 0x68 + 0x15C * index);
-	}
+    //僵尸属性倒计时
+    int statusCountdown()
+    {
+        return ReadMemory<int>(offset + 0x68 + 0x15C * index);
+    }
 
-	//判断僵尸是否消失
-	bool isDisappeared()
-	{
-		return ReadMemory<bool>(offset + 0xEC + 0x15C * index);
-	}
+    //判断僵尸是否消失
+    bool isDisappeared()
+    {
+        return ReadMemory<bool>(offset + 0xEC + 0x15C * index);
+    }
 
-	//僵尸中弹判定的横坐标
-	int bulletAbscissa()
-	{
-		return ReadMemory<int>(offset + 0x8C + 0x15C * index);
-	}
+    //僵尸中弹判定的横坐标
+    int bulletAbscissa()
+    {
+        return ReadMemory<int>(offset + 0x8C + 0x15C * index);
+    }
 
-	//僵尸中弹判定的纵坐标
-	int bulletOrdinate()
-	{
-		return ReadMemory<int>(offset + 0x90 + 0x15C * index);
-	}
+    //僵尸中弹判定的纵坐标
+    int bulletOrdinate()
+    {
+        return ReadMemory<int>(offset + 0x90 + 0x15C * index);
+    }
 
-	//僵尸攻击判定的横坐标
-	int attackAbscissa()
-	{
-		return ReadMemory<int>(offset + 0x9C + 0x15C * index);
-	}
+    //僵尸攻击判定的横坐标
+    int attackAbscissa()
+    {
+        return ReadMemory<int>(offset + 0x9C + 0x15C * index);
+    }
 
-	//僵尸攻击判定的纵坐标
-	int attackOrdinate()
-	{
-		return ReadMemory<int>(offset + 0xA0 + 0x15C * index);
-	}
+    //僵尸攻击判定的纵坐标
+    int attackOrdinate()
+    {
+        return ReadMemory<int>(offset + 0xA0 + 0x15C * index);
+    }
 
-	//僵尸减速倒计时
-	int slowCountdown()
-	{
-		return ReadMemory<int>(offset + 0xAC + 0x15C * index);
-	}
+    //僵尸减速倒计时
+    int slowCountdown()
+    {
+        return ReadMemory<int>(offset + 0xAC + 0x15C * index);
+    }
 
-	//僵尸黄油固定倒计时
-	int fixationCountdown()
-	{
-		return ReadMemory<int>(offset + 0xB0 + 0x15C * index);
-	}
+    //僵尸黄油固定倒计时
+    int fixationCountdown()
+    {
+        return ReadMemory<int>(offset + 0xB0 + 0x15C * index);
+    }
 
-	//僵尸冻结倒计时
-	int freezeCountdown()
-	{
-		return ReadMemory<int>(offset + 0xB4 + 0x15C * index);
-	}
+    //僵尸冻结倒计时
+    int freezeCountdown()
+    {
+        return ReadMemory<int>(offset + 0xB4 + 0x15C * index);
+    }
 };
 
 class PlaceMemory : public AbstractMemory
 {
 public:
-	PlaceMemory(int _index);
-	PlaceMemory();
+    PlaceMemory(int _index);
+    PlaceMemory();
 
-	virtual void getOffset();
+    virtual void getOffset();
 
-	//返回场景物品最大数目
-	//包括：弹坑 墓碑 罐子等
-	static int countMax()
-	{
-		return ReadMemory<int>(g_mainobject + 0x120);
-	}
+    //返回场景物品最大数目
+    //包括：弹坑 墓碑 罐子等
+    static int countMax()
+    {
+        return ReadMemory<int>(g_mainobject + 0x120);
+    }
 
-	//返回该格子物品的类型
-	int type()
-	{
-		return ReadMemory<int>(offset + 0x8 + 0xEC * index);
-	}
+    //返回该格子物品的类型
+    int type()
+    {
+        return ReadMemory<int>(offset + 0x8 + 0xEC * index);
+    }
 
-	//返回物品的行数 范围：[0,5]
-	int row()
-	{
-		return ReadMemory<int>(offset + 0x14 + 0xEC * index);
-	}
+    //返回物品的行数 范围：[0,5]
+    int row()
+    {
+        return ReadMemory<int>(offset + 0x14 + 0xEC * index);
+    }
 
-	//返回物品的列数 范围：[0,8]
-	int col()
-	{
-		return ReadMemory<int>(offset + 0x10 + 0xEC * index);
-	}
+    //返回物品的列数 范围：[0,8]
+    int col()
+    {
+        return ReadMemory<int>(offset + 0x10 + 0xEC * index);
+    }
 
-	//判断物品是否存在
-	bool isExist()
-	{
-		return ReadMemory<short>(offset + 0xEA + 0xEC * index);
-	}
+    //判断物品是否存在
+    bool isExist()
+    {
+        return ReadMemory<short>(offset + 0xEA + 0xEC * index);
+    }
 };
 
 class ItemMemory : public AbstractMemory
 {
 public:
-	ItemMemory(int _index);
-	ItemMemory();
+    ItemMemory(int _index);
+    ItemMemory();
 
-	virtual void getOffset();
+    virtual void getOffset();
 
-	//返回需要收集物品的数目
-	//包括金币 钻石 礼盒等
-	int count()
-	{
-		return ReadMemory<int>(g_mainobject + 0xF4);
-	}
+    //返回需要收集物品的数目
+    //包括金币 钻石 礼盒等
+    int count()
+    {
+        return ReadMemory<int>(g_mainobject + 0xF4);
+    }
 
-	//返回需要收集物品的最大数目
-	int countMax()
-	{
-		return ReadMemory<int>(g_mainobject + 0xE8);
-	}
+    //返回需要收集物品的最大数目
+    int countMax()
+    {
+        return ReadMemory<int>(g_mainobject + 0xE8);
+    }
 
-	//判断物品是否消失
-	bool isDisappeared()
-	{
-		return ReadMemory<bool>(offset + 0x38 + 0xD8 * index);
-	}
+    //判断物品是否消失
+    bool isDisappeared()
+    {
+        return ReadMemory<bool>(offset + 0x38 + 0xD8 * index);
+    }
 
-	//判断物品是否被收集
-	bool isCollected()
-	{
-		return ReadMemory<bool>(offset + 0x50 + 0xD8 * index);
-	}
+    //判断物品是否被收集
+    bool isCollected()
+    {
+        return ReadMemory<bool>(offset + 0x50 + 0xD8 * index);
+    }
 
-	//返回物品横坐标
-	float abscissa()
-	{
-		return ReadMemory<float>(offset + 0x24 + 0xD8 * index);
-	}
+    //返回物品横坐标
+    float abscissa()
+    {
+        return ReadMemory<float>(offset + 0x24 + 0xD8 * index);
+    }
 
-	//返回物品纵坐标
-	float ordinate()
-	{
-		return ReadMemory<float>(offset + 0x28 + 0xD8 * index);
-	}
+    //返回物品纵坐标
+    float ordinate()
+    {
+        return ReadMemory<float>(offset + 0x28 + 0xD8 * index);
+    }
 };
 
 //########## memory functions ###############
@@ -585,61 +514,61 @@ public:
 //判断鼠标是否在游戏窗口内
 inline bool MouseInGame()
 {
-	return ReadMemory<bool>(g_mainobject + 0x59);
+    return ReadMemory<bool>(g_mainobject + 0x59);
 }
 
 //返回鼠标所在行
 inline int MouseRow()
 {
-	return ReadMemory<int>(g_mainobject + 0x13C, 0x28) + 1;
+    return ReadMemory<int>(g_mainobject + 0x13C, 0x28) + 1;
 }
 
 //返回鼠标所在列
 inline float MouseCol()
 {
-	return 1.0 * ReadMemory<int>(g_mouse_offset + 0xE0) / 80;
+    return 1.0 * ReadMemory<int>(g_mouse_offset + 0xE0) / 80;
 }
 
 //判断游戏是否暂停
 inline bool GamePaused()
 {
-	return ReadMemory<bool>(g_mainobject + 0x164);
+    return ReadMemory<bool>(g_mainobject + 0x164);
 }
 
 //获取游戏当前游戏时钟
 inline int GameClock()
 {
-	return ReadMemory<int>(g_mainobject + 0x5568);
+    return ReadMemory<int>(g_mainobject + 0x5568);
 }
 
 // 一个内部时钟, 可用于判断舞王/伴舞的舞蹈/前进
 inline int DancerClock()
 {
-	return ReadMemory<int>(g_pvzbase + 0x838);
+    return ReadMemory<int>(g_pvzbase + 0x838);
 }
 
 //返回刷新倒计时
 inline int Countdown()
 {
-	return ReadMemory<int>(g_mainobject + 0x559c);
+    return ReadMemory<int>(g_mainobject + 0x559c);
 }
 
 //返回大波刷新倒计时
 inline int HugeWaveCountdown()
 {
-	return ReadMemory<int>(g_mainobject + 0x55A4);
+    return ReadMemory<int>(g_mainobject + 0x55A4);
 }
 
 //返回已刷新波数
 inline int NowWave()
 {
-	return ReadMemory<int>(g_mainobject + 0x557c);
+    return ReadMemory<int>(g_mainobject + 0x557c);
 }
 
 //返回初始刷新倒计时
 inline int InitialCountdown()
 {
-	return ReadMemory<int>(g_mainobject + 0x55A0);
+    return ReadMemory<int>(g_mainobject + 0x55A0);
 }
 
 //返回一行的冰道坐标 范围：[0,800]
@@ -647,14 +576,14 @@ inline int InitialCountdown()
 //IceAbscissa(0)------得到第一行的冰道坐标
 inline int IceAbscissa(int i)
 {
-	return ReadMemory<int>(g_mainobject + 0x60C + 4 * i);
+    return ReadMemory<int>(g_mainobject + 0x60C + 4 * i);
 }
 
 //获取游戏信息
 //1: 主界面, 2: 选卡, 3: 正常游戏/战斗, 4: 僵尸进屋, 7: 模式选择.
 inline int GameUi()
 {
-	return ReadMemory<int>(g_pvzbase + 0x7FC);
+    return ReadMemory<int>(g_pvzbase + 0x7FC);
 }
 
 //等待游戏开始
@@ -677,10 +606,42 @@ int GetSeedIndex(int type, bool imitator = false);
 //GetPlantIndex(3,4,33)---如果三行四列有花盆，返回其对象序列，否则返回-1
 int GetPlantIndex(int row, int col, int type = -1);
 
-//得到一组指定位置的植物下标
+//用于储存位置信息
+struct GRID
+{
+    int row;
+    int col;
+
+    GRID() : row(0), col(0) {}
+    GRID(int row_, int col_) : row(row_), col(col_) {}
+    friend const bool operator==(const GRID &grid1, const GRID &grid2)
+    {
+        return grid1.row == grid2.row && grid1.col == grid2.col;
+    }
+
+    friend const bool operator<(const GRID &grid1, const GRID &grid2)
+    {
+        if (grid1.row == grid2.row)
+            return grid1.col < grid2.col;
+        return grid1.row < grid2.row;
+    }
+
+    friend const bool operator>(const GRID &grid1, const GRID &grid2)
+    {
+        if (grid1.row == grid2.row)
+            return grid1.col > grid2.col;
+        return grid1.row > grid2.row;
+    }
+};
+
+//得到一组指定位置的植物的对象序列
+//参数1：填写一组指定位置
+//参数2：填写指定类型
+//参数3：得到对象序列，此函数按照位置的顺序填写对象序列
+//注意：如果没有植物填写-1，如果有植物但是不是指定类型，会填写-2
 void GetPlantIndexs(const std::vector<GRID> &grid_lst,
-					int type,
-					std::vector<int> &indexs);
+                    int type,
+                    std::vector<int> &indexs);
 
 //检查僵尸是否存在
 //使用示例
@@ -790,6 +751,14 @@ void SeedClick(int x, int y);
 //Shovel({{3, 6},{4, 6}})
 void Shovel(int row, float col, bool pumpkin = false);
 
+//用于铲除函数
+struct SHOVEL
+{
+    int row;
+    float col;
+    bool pumpkin = false;
+};
+
 //铲除植物函数
 //使用示例：
 //Shovel(4,6)--------铲除4行6列的植物,如果植物有南瓜保护默认铲除被保护植物
@@ -804,15 +773,29 @@ void Shovel(const std::vector<SHOVEL> &lst);
 //注意此函数参数书写形式为单引号
 inline bool KeyDown(int key)
 {
-	if (key > 96 && key < 123)
-		key -= 32;
-	return GetAsyncKeyState(key) & 0x8001 == 0x8001;
+    if (key > 96 && key < 123)
+        key -= 32;
+    return GetAsyncKeyState(key) & 0x8001 == 0x8001;
 }
 
 //键盘控制操作
 //keyConnect('Q', [&](){ Pao(2, 9);}) 按下Q就炮击(2, 9)
 //使用此函数时请在 main 函数结尾时尽量使用 pvz::WaitGameEnd()
 void KeyConnect(char key, const std::function<void()> &operate);
+
+//用于选卡函数(根据卡片对象序列选择)
+struct SEED_INDEX
+{
+    int row;
+    int col;
+    bool imitator = false;
+};
+
+//用于选卡函数(根据卡片名称选择)
+struct SEED_NAME
+{
+    std::string seed_name;
+};
 
 //选择卡片用来战斗
 //使用示例：
@@ -840,6 +823,28 @@ void SelectCards(const std::vector<SEED_NAME> &lst);
 //以下用卡片名称使用Card,卡片名称为拼音首字母，具体参考pvz_data.h的命名
 //Card({{"ytzd",2,3},{"Mhblj",3,4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
 void Card(int x, int row, float col);
+
+struct CARD
+{
+    int row;
+    float col;
+};
+
+//用于用卡函数(根据对象序列用卡)
+struct CARD_INDEX
+{
+    int x;
+    int row;
+    float col;
+};
+
+//用于选卡函数(根据名称用卡)
+struct CARD_NAME
+{
+    std::string card_name;
+    int row;
+    float col;
+};
 
 //用卡函数
 //使用示例：
@@ -890,185 +895,271 @@ void Card(const std::string &card_name, const std::vector<CARD> &lst);
 class PaoOperator
 {
 private:
-	//记录炮的信息
-	struct PAO_INFO
-	{
-		int recover_time;			 //恢复时间
-		int index;					 //炮的对象序列
-		bool is_in_list = false;	 //记录是否在炮列表内
-		bool is_in_sequence = false; //记录该炮是否被炮序限制
-	};
+    //记录炮的信息
+    struct PAO_INFO
+    {
+        int recover_time;            //恢复时间
+        int index;                   //炮的对象序列
+        bool is_in_list = false;     //记录是否在炮列表内
+        bool is_in_sequence = false; //记录该炮是否被炮序限制
+        bool is_shoveled = false;    //是否被铲除
+    };
 
-	using PaoIterator = std::map<GRID, PAO_INFO>::iterator;
+    using PaoIterator = std::map<GRID, PAO_INFO>::iterator;
 
-	//用于发炮函数
-	struct PAO
-	{
-		int row;
-		float col;
-	};
+    //用于发炮函数
+    struct PAO
+    {
+        int row;
+        float col;
+    };
 
-	//用于RAWPAO函数
-	struct RAWPAO
-	{
-		int pao_row;
-		int pao_col;
-		int drop_row;
-		float drop_col;
-	};
+    //用于RAWPAO函数
+    struct RAWPAO
+    {
+        int pao_row;
+        int pao_col;
+        int drop_row;
+        float drop_col;
+    };
 
-	//记录炮的位置和落点的位置及炮弹飞行时间
-	struct RP
-	{
-		PaoIterator it;
-		int drop_row;
-		float drop_col;
-		int fire_time;
-	};
+    //记录炮的位置和落点的位置及炮弹飞行时间
+    struct RP
+    {
+        PaoIterator it;
+        int drop_row;
+        float drop_col;
+        int fire_time;
+    };
 
-	//屋顶炮飞行时间辅助数据
-	struct FLY_TIME
-	{
-		int min_drop_x;   //记录该列炮最小飞行时间对应的最小的横坐标
-		int min_fly_time; //记录最小的飞行时间
-	};
+    //屋顶炮飞行时间辅助数据
+    struct FLY_TIME
+    {
+        int min_drop_x;   //记录该列炮最小飞行时间对应的最小的横坐标
+        int min_fly_time; //记录最小的飞行时间
+    };
 
-	static int conflict_resolution_type;	 //冲突解决方式
-	static std::map<GRID, PAO_INFO> all_pao; //所有炮的信息
-	std::vector<PaoIterator> paolist;		 //炮列表，记录炮的迭代器信息
-	int nowpao;								 //记录当前即将发射的下一门炮
-	bool limit_pao_sequence = true;			 //是否限制炮序
+    static int conflict_resolution_type;     //冲突解决方式
+    static std::map<GRID, PAO_INFO> all_pao; //所有炮的信息
+    std::vector<PaoIterator> paolist;        //炮列表，记录炮的迭代器信息
+    int nowpao;                              //记录当前即将发射的下一门炮
+    bool limit_pao_sequence = true;          //是否限制炮序
 
-	static const FLY_TIME fly_time_data[8];
-	//对炮进行一些检查
-	static void pao_examine(PaoIterator it, int now_time, int drop_row, float drop_col);
-	//检查落点
-	static bool is_drop_conflict(int pao_row, int pao_col, int drop_row, float drop_col);
-	//基础发炮函数
-	static void base_fire_pao(PaoIterator it, int now_time, int drop_row, float drop_col);
-	//获取屋顶炮飞行时间
-	static int get_roof_fly_time(int pao_col, float drop_col);
-	//基础屋顶修正时间发炮
-	static void base_fire_roof_pao(PaoIterator it, int fire_time, int drop_row, float drop_col);
-	//用户自定义炮位置，屋顶修正时间发炮：多发
-	static void base_fire_roof_paos(std::vector<RP> lst);
-	//铲种炮
-	static void shovel_and_plant_pao(int row, int col, int move_col, PaoIterator it, int delay_time);
-	//改变炮的信息
-	static void change_pao_message(PaoIterator it, int now_row, int now_col);
+    static const FLY_TIME fly_time_data[8];
+    //对炮进行一些检查
+    static void pao_examine(PaoIterator it, int now_time, int drop_row, float drop_col);
+    //检查落点
+    static bool is_drop_conflict(int pao_row, int pao_col, int drop_row, float drop_col);
+    //基础发炮函数
+    static void base_fire_pao(PaoIterator it, int now_time, int drop_row, float drop_col);
+    //获取屋顶炮飞行时间
+    static int get_roof_fly_time(int pao_col, float drop_col);
+    //基础屋顶修正时间发炮
+    static void base_fire_roof_pao(PaoIterator it, int fire_time, int drop_row, float drop_col);
+    //用户自定义炮位置，屋顶修正时间发炮：多发
+    static void base_fire_roof_paos(std::vector<RP> lst);
+    //铲种炮
+    static void shovel_and_plant_pao(int row, int col, int move_col, PaoIterator it, int delay_time);
+    //增加炮的信息
+    static void add_pao_message(int row, int col);
+    //种炮
+    static void plant_pao(int row, int col);
+    //得到炮的所有信息
+    static void get_all_pao_message();
 
 public:
-	//冲突参数
-	enum
-	{
-		DROP_POINT,
-		COLLECTION
-	};
+    //冲突类型
+    enum ConflictType
+    {
+        DROP_POINT,
+        COLLECTION
+    };
 
-	//构造函数，完成变量初始化
-	PaoOperator(const std::vector<GRID> &lst);
-	PaoOperator(bool initialize_paolist = true);
-	~PaoOperator();
+    //改变炮的信息
+    //请在手动或使用基础函数例如 Card 改变炮的信息后立即使用此函数
+    //使用此函数后需要注意对炮列表的隐形改变
+    //使用示例：
+    //changePaoMessage(2,3,2,3)--------在手动铲种(2,3)位置的炮后，更改相关炮的信息
+    //changePaoMessage(2,3,2,4)--------手动位移铲种(2,3)位置的炮后，更改相关炮的信息
+    //changePaoMessage(0,0,2,3)--------手动增加(2,3)位置的炮后，更改相关炮的信息
+    //changePaoMessage(2,3,0,0)--------手动删除(2,3)位置的炮后，更改相关炮的信息
+    static void changePaoMessage(int origin_row, int origin_col, int now_row, int now_col);
 
-	//////////////////////////////////////////// 模式设定成员
+    //设定解决冲突模式
+    //使用示例：
+    //setResolveConflictType(PaoOperator::DROP_POINT)---只解决落点冲突，不解决收集物点炮冲突
+    //setResolveConflictType(PaoOperator::COLLECTION)---只解决收集物点炮冲突，不解决落点冲突
+    static void setResolveConflictType(int type);
 
-	//设置炮序限制 参数为 false 则解除炮序限制，true 则增加炮序限制
-	//解除此限制后 fixPao 可铲种炮列表内的炮，tryPao 系列可使用， Pao 系列不可使用
-	//增加此限制后 fixPao 不可铲种炮列表内的炮，tryPao 系列不可使用， Pao 系列可使用
-	void setLimitPaoSequence(bool limit);
+    //发炮函数：用户自定义位置发射，屋顶修正飞行时间发炮.
+    //注意：尽量不要使用此函数操作位于炮列表中的炮，因为使用此函数后自动识别的炮序与UpdatePaolist更新的炮序将无效！
+    //使用示例：
+    //rawRoofPao(1,2,2,9)-----------------------将位置为（1，2）的炮发射到（2，9）
+    //rawRoofPao({ {1,2,2,9},{1,3,5,9}})-------将位置为（1，2）的炮发射到（2，9），将位置为（1，3）的炮发射到（5，9）
+    static void rawRoofPao(int pao_row, int pao_col, int drop_row, float drop_col);
 
-	/////////////////////////////////////////// 下面是关于限制炮序的相关成员
 
-	//设置即将发射的下一门炮
-	//此函数只有在限制炮序的时候才可调用
-	//使用示例：
-	//setNextPao(10)------将炮列表中第十门炮设置为下一门即将发射的炮
-	void setNextPao(int next_pao);
+    //发炮函数：用户自定义位置发射，屋顶修正飞行时间发炮.
+    //注意：尽量不要使用此函数操作位于炮列表中的炮，因为使用此函数后自动识别的炮序与UpdatePaolist更新的炮序将无效！
+    //使用示例：
+    //rawRoofPao(1,2,2,9)-----------------------将位置为（1，2）的炮发射到（2，9）
+    //rawRoofPao({ {1,2,2,9},{1,3,5,9}})-------将位置为（1，2）的炮发射到（2，9），将位置为（1，3）的炮发射到（5，9）
+    static void rawRoofPao(const std::vector<RAWPAO> &lst);
 
-	//设置即将发射的下一门炮
-	//此函数只有在限制炮序的时候才可调用
-	//使用示例：
-	//setNextPao(2, 8)------将炮列表中位于 (2, 8) 的炮设置为下一门即将发射的炮
-	void setNextPao(int row, int col);
+    //铲炮
+    //注意：使用此函数后需要注意对炮列表的隐形改变
+    //使用示例
+    //shovelPao(2, 3)-------铲除 (2, 3) 位置的炮，并且更新炮的信息
+    static void shovelPao(int row, int col);
 
-	//跳过一定数量的炮
-	void skipPao(int x)
-	{
-		nowpao = (nowpao + x) % paolist.size();
-	}
+    //种炮
+    //注意：使用此函数后需要注意对炮列表的隐形改变
+    //此函数不会检查目标位置是否有植物和是否可以种植植物
+    //使用示例
+    //plantPao(2, 3)--------在 (2, 3) 位置种植玉米投手及玉米炮，并录入炮的信息
+    static void plantPao(int row, int col)
+    {
+        RunningInThread(plant_pao, row, col);
+    }
 
-	//发炮函数：单发
-	void pao(int row, float col);
+    //铲种炮函数  已不推荐使用  注：shovelPao plantPao 灵活性更高
+    //使用示例：
+    //fixPao(3,4)------------铲种(3,4)位置的炮
+    //fixPao(3,4,1)--------铲掉(3,4)位置的炮，将炮种植在(3,4+1)位置上/位移铲种炮
+    static void fixPao(int row, int col, int move_col = 0, int delay_time = 0);
 
-	//发炮函数：多发
-	void pao(const std::vector<PAO> &lst);
+    //发炮函数：用户自定义位置发射
+    //注意：尽量不要使用此函数操作位于炮列表中的炮，因为使用此函数后自动识别的炮序与 resetPaolist 更新的炮序将无效！
+    //使用示例：
+    //rawPao(1,2,2,9)-----------------------将位置为（1，2）的炮发射到（2，9）
+    //rawPao({{1, 2, 2, 9}, {1, 3, 5, 9}})-------将位置为（1，2）的炮发射到（2，9），将位置为（1，3）的炮发射到（5，9）
+    static void rawPao(int pao_row, int pao_col, int drop_row, float drop_col);
 
-	//等待炮恢复立即用炮：单发
-	void recoverPao(int row, float col);
+    //发炮函数：用户自定义位置发射
+    //注意：尽量不要使用此函数操作位于炮列表中的炮，因为使用此函数后自动识别的炮序与UpdatePaolist更新的炮序将无效！
+    //使用示例：
+    //rawPao(1,2,2,9)-----------------------将位置为（1，2）的炮发射到（2，9）
+    //rawPao({{1, 2, 2, 9}, {1, 3, 5, 9}})-------将位置为（1，2）的炮发射到（2，9），将位置为（1，3）的炮发射到（5，9）
+    static void rawPao(const std::vector<RAWPAO> &lst);
 
-	//等待炮恢复立即用炮：多发
-	void recoverPao(const std::vector<PAO> &lst);
+    //构造函数，完成变量初始化
+    PaoOperator(const std::vector<GRID> &lst);
+    PaoOperator();
+    ~PaoOperator();
 
-	//屋顶修正时间发炮：单发
-	void roofPao(int row, float col);
+    //////////////////////////////////////////// 模式设定成员
 
-	//屋顶修正时间发炮：多发
-	void roofPao(const std::vector<PAO> &lst);
+    //设置炮序限制 参数为 false 则解除炮序限制，true 则增加炮序限制
+    //解除此限制后 fixPao 可铲种炮列表内的炮，tryPao 系列可使用， Pao 系列不可使用
+    //增加此限制后 fixPao 不可铲种炮列表内的炮，tryPao 系列不可使用， Pao 系列可使用
+    void setLimitPaoSequence(bool limit);
 
-	//////////////////////////////////////// 下面是不限制炮序能够使用的成员
+    /////////////////////////////////////////// 下面是关于限制炮序的相关成员
 
-	//尝试发炮：单发
-	bool tryPao(int row, float col);
+    //设置即将发射的下一门炮
+    //此函数只有在限制炮序的时候才可调用
+    //使用示例：
+    //setNextPao(10)------将炮列表中第十门炮设置为下一门即将发射的炮
+    //setNextPao(2, 8)------将炮列表中位于 (2, 8) 的炮设置为下一门即将发射的炮
+    void setNextPao(int next_pao);
 
-	//尝试发炮：多发
-	bool tryPao(const std::vector<PAO> &lst);
+    //设置即将发射的下一门炮
+    //此函数只有在限制炮序的时候才可调用
+    //使用示例：
+    //setNextPao(10)------将炮列表中第十门炮设置为下一门即将发射的炮
+    //setNextPao(2, 8)------将炮列表中位于 (2, 8) 的炮设置为下一门即将发射的炮
+    void setNextPao(int row, int col);
 
-	//屋顶修正时间发炮：单发
-	bool tryRoofPao(int row, float col);
+    //跳炮函数
+    //使用示例：
+    //skipao(2)---跳过按照顺序即将要发射的2门炮
+    void skipPao(int x)
+    {
+        nowpao = (nowpao + x) % paolist.size();
+    }
 
-	//屋顶修正时间发炮：多发
-	bool tryRoofPao(const std::vector<PAO> &lst);
+    //发炮函数
+    //使用示例：
+    //pao(2,9)----------------炮击二行，九列
+    //pao({ {2,9},{5,9} })-----炮击二行，九列，五行，九列
+    void pao(int row, float col);
 
-	//尝试铲种炮
-	void tryFixPao();
+    //发炮函数
+    //使用示例：
+    //pao(2,9)----------------炮击二行，九列
+    //pao({ {2,9},{5,9} })-----炮击二行，九列，五行，九列
+    void pao(const std::vector<PAO> &lst);
 
-	////////////////////////////////// 下面是不受模式限制使用的成员
+    //发炮函数 炮CD恢复自动发炮
+    //使用示例：
+    //recoverPao(2,9)----------------炮击二行，九列
+    //recoverPao({ {2,9},{5,9} })-----炮击二行，九列，五行，九列
+    void recoverPao(int row, float col);
 
-	//重置炮列表
-	void resetPaoList(const std::vector<GRID> &lst);
-	void resetPaoList();
+    //发炮函数 炮CD恢复自动发炮
+    //使用示例：
+    //recoverPao(2,9)----------------炮击二行，九列
+    //recoverPao({ {2,9},{5,9} })-----炮击二行，九列，五行，九列
+    void recoverPao(const std::vector<PAO> &lst);
 
-	//改变炮的信息
-	//请在手动或使用基础函数例如 Card 改变炮的信息后立即使用此函数
-	//使用示例：
-	//changePaoMessage(2,3,2,3)--------在手动铲种(2,3)位置的炮后，更改相关炮的信息
-	//changePaoMessage(2,3,2,4)--------手动位移铲种(2,3)位置的炮后，更改相关炮的信息
-	//changePaoMessage(0,0,2,3)--------手动增加(2,3)位置的炮后，更改相关炮的信息
-	static void changePaoMessage(int origin_row, int origin_col, int now_row, int now_col);
+    //屋顶修正飞行时间发炮. 此函数开销较大不适合精确键控.
+    //此函数只适用于RE与ME 修正时间：387cs
+    //使用示例：
+    //roofPao(3,7)---------------------修正飞行时间后炮击3行7列
+    //roofPao({ {2,9},{5,9} })---------修正飞行时间后炮击2行9列,5行9列
+    void roofPao(int row, float col);
 
-	//设定解决冲突模式
-	//使用示例：
-	//setResolveConflictType(PaoOperator::DROP_POINT)---只解决落点冲突，不解决收集物点炮冲突
-	//setResolveConflictType(PaoOperator::COLLECTION)---只解决收集物点炮冲突，不解决落点冲突
-	static void setResolveConflictType(int type);
+    //屋顶修正飞行时间发炮. 此函数开销较大不适合精确键控.
+    //此函数只适用于RE与ME 修正时间：387cs
+    //使用示例：
+    //roofPao(3,7)---------------------修正飞行时间后炮击3行7列
+    //roofPao({ {2,9},{5,9} })---------修正飞行时间后炮击2行9列,5行9列
+    void roofPao(const std::vector<PAO> &lst);
 
-	//屋顶修正时间发炮，单发
-	static void rawRoofPao(int pao_row, int pao_col, int drop_row, float drop_col);
+    //////////////////////////////////////// 下面是不限制炮序能够使用的成员
 
-	//屋顶修正时间发炮 多发
-	static void rawRoofPao(const std::vector<RAWPAO> &lst);
+    //自动找炮函数
+    //使用示例
+    //tryPao(2,9)----------------在炮列表中找到可用的炮后，炮击二行，九列
+    //tryPao({{2, 9}, {5, 9}})-----在炮列表中找到可用的炮后，炮击二行，九列，五行，九列
+    bool tryPao(int row, float col);
 
-	//铲种炮
-	static void fixPao(int row, int col, int move_col = 0, int delay_time = 0);
+    //自动找炮函数
+    //使用示例
+    //tryPao(2,9)----------------在炮列表中找到可用的炮后，炮击二行，九列
+    //tryPao({{2, 9}, {5, 9}})-----在炮列表中找到可用的炮后，炮击二行，九列，五行，九列
+    bool tryPao(const std::vector<PAO> &lst);
 
-	//用户自定义炮位置发炮：单发
-	static void rawPao(int pao_row, int pao_col, int drop_row, float drop_col);
+    //自动找炮函数
+    //使用示例
+    //tryRoofPao(2,9)----------------在炮列表中找到可用的炮后，炮击二行，九列
+    //tryRoofPao({{2, 9},{5, 9}})-----在炮列表中找到可用的炮后，炮击二行，九列，五行，九列
+    bool tryRoofPao(int row, float col);
 
-	//用户自定义炮位置发炮：多发
-	static void rawPao(const std::vector<RAWPAO> &lst);
+    //自动找炮函数
+    //使用示例
+    //tryRoofPao(2,9)----------------在炮列表中找到可用的炮后，炮击二行，九列
+    //tryRoofPao({{2, 9},{5, 9}})-----在炮列表中找到可用的炮后，炮击二行，九列，五行，九列
+    bool tryRoofPao(const std::vector<PAO> &lst);
 
-	//得到炮的所有信息，此函数用户不能调用
-	static void getAllPaoMessage_userForbidden();
+    //尝试铲种炮函数
+    //使用示例：
+    //fixPao()------------尝试铲种即将发射的下一门炮，该函数不支持位移铲种，也不支持延迟时间，因为没有意义
+    void tryFixPao();
+
+    ////////////////////////////////// 下面是不受模式限制使用的成员
+
+    //重置炮列表
+    //使用示例:
+    //resetPaoList({{3, 1},{4, 1},{3, 3},{4, 3}})-------经典四炮
+    //resetPaoList()-------将场上所有剩余的未在炮列表的炮全部重置到此列表
+    void resetPaoList(const std::vector<GRID> &lst);
+
+    //重置炮列表
+    //使用示例:
+    //resetPaoList({{3, 1},{4, 1},{3, 3},{4, 3}})-------经典四炮
+    //resetPaoList()-------将场上所有剩余的未在炮列表的炮全部重置到此列表
+    void resetPaoList();
 };
 
 //CvZ自定义炮类对象
@@ -1080,36 +1171,36 @@ extern PaoOperator pao_cvz;
 class BaseBaseAutoThread
 {
 protected:
-	bool pause_;		   //暂停，线程仍在运行
-	bool stop_;			   //停止，线程不再运行
-	int interval_;		   //检测间隔
-	void error_messages(); //错误信息
+    bool pause_;           //暂停，线程仍在运行
+    bool stop_;            //停止，线程不再运行
+    int interval_;         //检测间隔
+    void error_messages(); //错误信息
 
 public:
-	BaseBaseAutoThread() : pause_(false), stop_(true), interval_(100) {}
-	virtual ~BaseBaseAutoThread() {}
-	//调用此函数使得线程停止运行
-	virtual void stop() { stop_ = true; }
-	//调用此函数使得线程暂停运行
-	void pause() { pause_ = true; }
-	//调用此函数使得线程继续运行
-	void goOn() { pause_ = false; }
-	//调用此函数改变检测间隔
-	void setInterval(int interval) { interval_ = interval; }
+    BaseBaseAutoThread() : pause_(false), stop_(true), interval_(100) {}
+    virtual ~BaseBaseAutoThread() {}
+    //调用此函数使得线程停止运行
+    void stop() { stop_ = true; }
+    //调用此函数使得线程暂停运行
+    void pause() { pause_ = true; }
+    //调用此函数使得线程继续运行
+    void goOn() { pause_ = false; }
+    //调用此函数改变检测间隔
+    void setInterval(int interval) { interval_ = interval; }
 };
 
 //自动操作函数基类
 class BaseAutoThread : public BaseBaseAutoThread
 {
 protected:
-	int leaf_seed_index;
-	std::vector<GRID> grid_lst; //记录位置信息
-	//重置填充列表
-	void base_reset_list(const std::vector<GRID> &lst);
+    int leaf_seed_index;
+    std::vector<GRID> grid_lst; //记录位置信息
+    //重置填充列表
+    void base_reset_list(const std::vector<GRID> &lst);
 
 public:
-	BaseAutoThread();
-	virtual ~BaseAutoThread() {}
+    BaseAutoThread();
+    virtual ~BaseAutoThread() {}
 };
 
 //自动存用冰类
@@ -1123,36 +1214,31 @@ public:
 class FillIce : public BaseAutoThread
 {
 private:
-	void use_ice();
-	std::vector<int> ice_plant_indexs;
-	int coffee_index;
+    void use_ice();
+    std::vector<int> ice_plant_indexs;
+    int coffee_index;
 
 public:
-	FillIce();
-	~FillIce() {}
+    FillIce();
+    ~FillIce() {}
 
-	//重置存冰位置
-	//使用示例：
-	//resetFillList({{3,4},{5,6}})-----将存冰位置重置为{3，4}，{5，6}
-	void resetFillList(const std::vector<GRID> &lst)
-	{
-		base_reset_list(lst);
-	}
+    //重置存冰位置
+    //使用示例：
+    //resetFillList({{3,4},{5,6}})-----将存冰位置重置为{3，4}，{5，6}
+    void resetFillList(const std::vector<GRID> &lst)
+    {
+        base_reset_list(lst);
+    }
 
-	//线程开始工作
-	//使用示例：
-	//start({{3,4},{5,6}})-----在{3，4}，{5，6}位置存冰
-	void start(const std::vector<GRID> &lst);
+    //线程开始工作
+    //使用示例：
+    //start({{3,4},{5,6}})-----在{3，4}，{5，6}位置存冰
+    void start(const std::vector<GRID> &lst);
 
-	//使用咖啡豆
-	//使用此函数前必须使用start
-	void coffee();
-
-	//调用此函数使得线程停止运行
-	virtual void stop()
-	{
-		stop_ = true;
-	}
+    //使用咖啡豆函数
+    //使用示例：
+    //coffee()-----自动使用优先级低的存冰位
+    void coffee();
 };
 
 //自动存用冰类对象：使用此对象可以使您更愉快的管理存冰
@@ -1176,35 +1262,35 @@ extern FillIce ice_filler;
 class FixNut : public BaseAutoThread
 {
 public:
-	FixNut();
-	~FixNut() {}
+    FixNut();
+    ~FixNut() {}
 
-	//重置坚果修补位置
-	//使用示例：
-	//resetFixList({{2,3},{3,4}})-------位置被重置为{2，3}，{3，4}
-	void resetFixList(const std::vector<GRID> &lst);
+    //重置坚果修补位置
+    //使用示例：
+    //resetFixList({{2,3},{3,4}})-------位置被重置为{2，3}，{3，4}
+    void resetFixList(const std::vector<GRID> &lst);
 
-	//线程开始工作，此函数开销较大，不建议多次调用
-	//第一个参数为坚果类型：3--坚果，23--高坚果，30--南瓜头
-	//第二个参数不填默认全场
-	//第三个参数不填默认刚一开始损坏就修补
-	//使用示例：
-	//start(23)-------修补全场的高坚果
-	//start(30,{{1,3},{2,3}})-----修补位置为{1，3}，{2，3}位置的南瓜头
-	//start(3,{{1,3},{2,3}},300)------修补位置为{1，3}，{2，3}位置的坚果，血量降至300开始修补
-	void start(int nut_type, const std::vector<GRID> &lst = {}, int fix_hp = 8000);
+    //线程开始工作，此函数开销较大，不建议多次调用
+    //第一个参数为坚果类型：3--坚果，23--高坚果，30--南瓜头
+    //第二个参数不填默认全场
+    //第三个参数不填默认刚一开始损坏就修补
+    //使用示例：
+    //start(23)-------修补全场的高坚果
+    //start(30,{{1,3},{2,3}})-----修补位置为{1，3}，{2，3}位置的南瓜头
+    //start(3,{{1,3},{2,3}},300)------修补位置为{1，3}，{2，3}位置的坚果，血量降至300开始修补
+    void start(int nut_type, const std::vector<GRID> &lst = {}, int fix_hp = 8000);
 
-	//重置修补血量
-	//使用示例：
-	//resetFixHp(200)------将修补触发血量改为200
-	void resetFixHp(int fix_hp);
+    //重置修补血量
+    //使用示例：
+    //resetFixHp(200)------将修补触发血量改为200
+    void resetFixHp(int fix_hp);
 
 private:
-	int nut_type_;
-	int nut_seed_index;
-	int fix_hp_;
-	std::vector<int> nut_plant_indexs;
-	void update_nut();
+    int nut_type_;
+    int nut_seed_index;
+    int fix_hp_;
+    std::vector<int> nut_plant_indexs;
+    void update_nut();
 };
 
 //自动修补坚果类对象
@@ -1226,15 +1312,15 @@ extern FixNut nut_fixer;
 class NvPuMiJi : public BaseBaseAutoThread
 {
 public:
-	NvPuMiJi();
-	~NvPuMiJi() {}
+    NvPuMiJi();
+    ~NvPuMiJi() {}
 
-	//开启女仆秘籍
-	void start();
+    //开启女仆秘籍
+    void start();
 
 private:
-	//停止舞伴前进
-	void stop_dancer_advance() const;
+    //停止舞伴前进
+    void stop_dancer_advance() const;
 };
 
 //女仆秘籍类对象
@@ -1257,60 +1343,60 @@ extern NvPuMiJi nv_pu_mi_ji;
 class PlaceDianCai : public BaseBaseAutoThread
 {
 private:
-	//记录一些放置垫材的信息
-	struct PLACE_MESSAGE
-	{
-		int plant_max_abscissa;	//记录植物最大的横坐标值
-		float zombie_min_abscissa; //记录巨人僵尸最小的横坐标值
-		int place_max_col;		   //记录放置的最大列数
-		bool is_plantble;		   //是否要种植物
-	};
+    //记录一些放置垫材的信息
+    struct PLACE_MESSAGE
+    {
+        int plant_max_abscissa;    //记录植物最大的横坐标值
+        float zombie_min_abscissa; //记录巨人僵尸最小的横坐标值
+        int place_max_col;         //记录放置的最大列数
+        bool is_plantble;          //是否要种植物
+    };
 
-	std::vector<PLACE_MESSAGE> place_message_;
-	std::vector<int> lst_plant_;
-	std::vector<int> lst_zombie_;
-	PlantMemory plant;
-	ZombieMemory zombie;
-	void get_min_absci_zombie();
-	GRID need_diancai_grid() const;
-	void auto_plant_diancai();
+    std::vector<PLACE_MESSAGE> place_message_;
+    std::vector<int> lst_plant_;
+    std::vector<int> lst_zombie_;
+    PlantMemory plant;
+    ZombieMemory zombie;
+    void get_min_absci_zombie();
+    GRID need_diancai_grid() const;
+    void auto_plant_diancai();
 
 public:
-	PlaceDianCai();
-	~PlaceDianCai(){};
+    PlaceDianCai();
+    ~PlaceDianCai(){};
 
-	//开启放置垫材线程
-	//此函数开销较大，不建议多次调用
-	//使用示例：
-	//start({1,2,3,4})------将第 1 2 3 4 张卡片设为垫材，默认全场都从第九列开始垫，默认只垫 红眼 白眼
-	//start({1,2,3,4},{{2,6},{4,5}})-----将第 1 2 3 4 张卡片设为垫材，只垫第 2 4 行，而且第二行从第六列开始垫，第四行从第五列开始垫
-	//start({1,2,3,4},{{2,6},{4,5}},{23,32,7})----将第 1 2 3 4 张卡片设为垫材，只垫第 2 4 行，而且第二行从第六列开始垫，第四行从第五列开始垫,垫红白眼和橄榄
-	void start(const std::vector<int> &lst_plant,
-			   const std::vector<GRID> &lst_grid = {},
-			   const std::vector<int> &lst_zombie = {23, 32});
+    //开启放置垫材线程
+    //此函数开销较大，不建议多次调用
+    //使用示例：
+    //start({1,2,3,4})------将第 1 2 3 4 张卡片设为垫材，默认全场都从第九列开始垫，默认只垫 红眼 白眼
+    //start({1,2,3,4},{{2,6},{4,5}})-----将第 1 2 3 4 张卡片设为垫材，只垫第 2 4 行，而且第二行从第六列开始垫，第四行从第五列开始垫
+    //start({1,2,3,4},{{2,6},{4,5}},{23,32,7})----将第 1 2 3 4 张卡片设为垫材，只垫第 2 4 行，而且第二行从第六列开始垫，第四行从第五列开始垫,垫红白眼和橄榄
+    void start(const std::vector<int> &lst_plant,
+               const std::vector<GRID> &lst_grid = {},
+               const std::vector<int> &lst_zombie = {23, 32});
 
-	//重置保护植物列数
-	//使用示例：
-	//resetProtectedPlantList()-----默认将要保护的植物的位置重置为每行的最靠前位置
-	//resetProtectedPlantList({{2,3},{3,4}})------将要保护的植物的位置重置为{2,3},{3,4}
-	//注意：此函数必须配合要垫的行数，如果出现重置的行数不在要垫的范围内，就会报错
-	void resetProtectedPlantList(const std::vector<GRID> &lst = {});
-	void resetSetDianCaiList();
+    //重置保护植物列数
+    //使用示例：
+    //resetProtectedPlantList()-----默认将要保护的植物的位置重置为每行的最靠前位置
+    //resetProtectedPlantList({{2,3},{3,4}})------将要保护的植物的位置重置为{2,3},{3,4}
+    //注意：此函数必须配合要垫的行数，如果出现重置的行数不在要垫的范围内，就会报错
+    void resetProtectedPlantList(const std::vector<GRID> &lst = {});
 
-	//重置被当作垫材的植物
-	//使用示例：
-	//resetDianCaiSeedList({1,2,3})----将第1 2 3张卡片设置为垫材
-	void resetDianCaiSeedList(const std::vector<int> &lst) { lst_plant_ = lst; }
+    //重置被当作垫材的植物
+    //使用示例：
+    //resetDianCaiSeedList({1,2,3})----将第1 2 3张卡片设置为垫材
+    void resetDianCaiSeedList(const std::vector<int> &lst) { lst_plant_ = lst; }
 
-	//重置要垫的僵尸类型
-	//使用示例：
-	//resetZombieTypeList({23,32,0})-----将要垫的僵尸改为 白眼 红眼 普僵
-	void resetZombieTypeList(const std::vector<int> &lst) { lst_zombie_ = lst; }
+    //重置要垫的僵尸类型
+    //使用示例：
+    //resetZombieTypeList({23,32,0})-----将要垫的僵尸改为 白眼 红眼 普僵
+    void resetZombieTypeList(const std::vector<int> &lst) { lst_zombie_ = lst; }
 
-	//重置垫材放置位置列表
-	//使用示例：
-	//resetSetDianCaiList({{2,8},{3,9}})-----将开始种垫材的位置重置为{2，8}，{3，9}
-	void resetSetDianCaiList(const std::vector<GRID> &lst);
+    //重置垫材放置位置列表
+    //使用示例：
+    //resetSetDianCaiList({{2,8},{3,9}})-----将开始种垫材的位置重置为{2，8}，{3，9}
+    void resetSetDianCaiList(const std::vector<GRID> &lst);
+    void resetSetDianCaiList();
 };
 
 //自动放置垫材类对象
@@ -1327,32 +1413,31 @@ extern PlaceDianCai dian_cai_placer;
 class CollectItem : public BaseBaseAutoThread
 {
 public:
-	CollectItem();
-	void start();
+    CollectItem();
+    void start();
 
 private:
-	void start_auto_collect() const;
+    void start_auto_collect() const;
 };
 
 extern CollectItem item_collector;
 
 // ########################  mode select #################
 
-enum
+enum Examine
 {
-	CVZ_NO,
-	CVZ_ERROR,
-	CVZ_INFO
+    CVZ_NO,
+    CVZ_ERROR,
+    CVZ_INFO,
+    CVZ_IGNORE_TIME
 };
 
 //开关函数：开启合理性检查（一些比较复杂的检查由此函数来控制）
 //pvz::CVZ_NO : 不进行开销较大的检查
 //pvz::CVZ_ERROR : 进行开销较大的检查
 //pvz::CVZ_INFO : 输出操作信息
+//pvz::CVZ_IGNORE_TIME : 进行无视时间调试
 void OpenExamine(int level = CVZ_INFO);
-
-//取消自动退出机制
-void CancelAutoExit();
 
 } // namespace pvz
 

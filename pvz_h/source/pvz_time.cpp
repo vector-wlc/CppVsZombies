@@ -1,3 +1,11 @@
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \pvz_h\source\pvz_time.cpp
+ * @Date: 2019-10-10 23:11:52
+ * @LastEditTime : 2020-01-02 22:07:10
+ * @Description: 时间函数的实现
+ */
 
 #include "libpvz.h"
 #include "pvz_global.h"
@@ -6,11 +14,11 @@
 namespace pvz
 {
 
-extern int zombie_refresh_time;
-
 //预判时间
 void Prejudge(int t, int w)
 {
+    if (g_examine_level == CVZ_IGNORE_TIME)
+        return;
     if (g_examine_level == CVZ_INFO)
     {
         g_mu.lock();
@@ -28,7 +36,7 @@ void Prejudge(int t, int w)
     int now_wave = NowWave();
     //预判的目标波已刷出(这种情况在wave==10||wave==20时基本不可能出现，所以不考虑）
     if (now_wave == wave)
-        zombie_refresh_time = Countdown() + GameClock() - InitialCountdown();
+        g_zombie_refresh_time = Countdown() + GameClock() - InitialCountdown();
     //预判的目标波未刷出
     else if (now_wave < wave)
     {
@@ -44,21 +52,21 @@ void Prejudge(int t, int w)
 
             while (HugeWaveCountdown() > base_time)
                 Sleep(1);
-            zombie_refresh_time = HugeWaveCountdown() + GameClock();
+            g_zombie_refresh_time = HugeWaveCountdown() + GameClock();
         }
         else
         {
             while (Countdown() > base_time)
                 Sleep(1);
-            zombie_refresh_time = Countdown() + GameClock();
+            g_zombie_refresh_time = Countdown() + GameClock();
         }
     }
 
     else
         PrintError("Prejudge无法预判出僵尸刷新时间戳，请调整其他时间函数的使用");
     //如果时间已超过预定时间戳
-    if ((GameClock() - zombie_refresh_time) > t)
-        PrintError("预判的时间为 %d，现在的时间已到 %d，请检查其他函数的使用", t, GameClock() - zombie_refresh_time);
+    if ((GameClock() - g_zombie_refresh_time) > t)
+        PrintError("预判的时间为 %d，现在的时间已到 %d，请检查其他函数的使用", t, GameClock() - g_zombie_refresh_time);
 
     if (g_examine_level == CVZ_INFO)
     {
@@ -67,16 +75,19 @@ void Prejudge(int t, int w)
         g_mu.unlock();
     }
     //等待时间到达预定时间戳
-    while ((GameClock() - zombie_refresh_time) < t - 2)
+    while ((GameClock() - g_zombie_refresh_time) < t - 2)
         Sleep(1);
 
-    while ((GameClock() - zombie_refresh_time) < t)
+    while ((GameClock() - g_zombie_refresh_time) < t)
         ;
 }
 
 //延迟一定时间
 void Delay(int time)
 {
+    if (g_examine_level == CVZ_IGNORE_TIME)
+        return;
+        
     if (time >= 0)
     {
         //获取当前时钟
@@ -102,10 +113,12 @@ void Delay(int time)
 //等待时间到
 void Until(int time)
 {
+    if (g_examine_level == CVZ_IGNORE_TIME)
+        return;
 
-    if ((GameClock() - zombie_refresh_time) > time)
+    if ((GameClock() - g_zombie_refresh_time) > time)
         PrintError("Until目标时间戳为 %d，现在的时间已到 %d，请检查其他函数的使用",
-                   time, GameClock() - zombie_refresh_time);
+                   time, GameClock() - g_zombie_refresh_time);
     if (g_examine_level == CVZ_INFO)
     {
         g_mu.lock();
@@ -113,15 +126,18 @@ void Until(int time)
         g_mu.unlock();
     }
     //等待时间到达预定时间戳
-    while ((GameClock() - zombie_refresh_time) < time - 2)
+    while ((GameClock() - g_zombie_refresh_time) < time - 2)
         Sleep(1);
 
-    while ((GameClock() - zombie_refresh_time) < time)
+    while ((GameClock() - g_zombie_refresh_time) < time)
         ;
 }
 
 void Ice3(int delay_time)
 {
+    if (g_examine_level == CVZ_IGNORE_TIME)
+        return;
+
     RunningInThread([=]() {
         int ice3_time = delay_time + GameClock();
         Sleep((delay_time - 90) * 10);

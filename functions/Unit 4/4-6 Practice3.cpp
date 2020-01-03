@@ -58,6 +58,7 @@ int main()
 
     //启用存冰线程
     ice_filler.start({{2, 3}, {4, 3}, {2, 8}, {4, 8}});
+    ice_filler.setInterval(30);
 
     //############# wave 1 ##################
     Prejudge(223 - 387, 1);

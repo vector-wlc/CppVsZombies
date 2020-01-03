@@ -1,10 +1,16 @@
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \CppVsZombies\functions\Unit 3\3-5 Practice.cpp
+ * @Date: 2019-09-11 20:36:49
+ * @LastEditTime : 2020-01-03 13:14:35
+ * @Description: 第三单元的练习 经典四炮
+ */
 
-// 此文件是第三单元的练习
 #include "pvz.h"
 
 int main()
 {
-    OpenExamine(pvz::CVZ_NO);
     // 选择寒冰菇 模仿寒冰菇 咖啡豆 窝瓜 樱桃 毁灭菇 荷叶 南瓜头 三叶草 小喷菇
     SelectCards({{"hbg"}, {"Mhbg"}, {"kfd"}, {"wg"}, {"ytzd"}, {"hmg"}, {"hy"}, {"ngt"}, {"syc"}, {"xpg"}});
 
@@ -22,7 +28,6 @@ int main()
 
     for (wave = 1; wave < 21; wave++)
     {
-
         if (wave_in(1, 5, 9, 14, 18))
         {
             Prejudge(-95, wave);

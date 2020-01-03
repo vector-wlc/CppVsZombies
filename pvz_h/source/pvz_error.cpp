@@ -1,3 +1,11 @@
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \pvz_h\source\pvz_error.cpp
+ * @Date: 2019-10-10 23:08:08
+ * @LastEditTime : 2019-12-31 23:10:36
+ * @Description: 错误相关函数的实现
+ */
 
 #include "pvz_error.h"
 

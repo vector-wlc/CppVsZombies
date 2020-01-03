@@ -1,17 +1,22 @@
-
-// cvz_error.h
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \pvz_h\source\pvz_error.h
+ * @Date: 2019-10-10 23:03:40
+ * @LastEditTime : 2020-01-02 22:07:35
+ * @Description: error 
+ */
 
 #ifndef CVZ_ERROR_H
 #define CVZ_ERROR_H
 
 #include <windows.h>
-#include <sstream>
+#include <string>
 #include "pvz_global.h"
 
 namespace pvz
 {
 #ifndef GBK
-
 //UTF-8 转 GBK
 void UTF8ToGBK(std::string &strUTF8);
 
@@ -27,7 +32,9 @@ inline void SetColor(unsigned short color)
 template <typename... Args>
 void PrintError(const std::string &content, Args... args)
 {
-
+    if (g_examine_level == 3)
+        return;
+        
     std::string error_content = "wave %d : " + content + "\n\n";
 
 #ifndef GBK
@@ -51,8 +58,6 @@ void PrintError(const std::string &content, Args... args)
     SetColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 
     std::system("pause");
-    g_error_exit = true;
-    std::exit(1);
 }
 } // namespace pvz
 

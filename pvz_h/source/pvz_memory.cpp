@@ -1,3 +1,11 @@
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \pvz_h\source\pvz_memory.cpp
+ * @Date: 2019-10-10 23:35:37
+ * @LastEditTime : 2020-01-02 23:11:46
+ * @Description: 内存读取函数及相关类的实现
+ */
 
 #include "libpvz.h"
 #include "pvz_global.h"
@@ -188,11 +196,15 @@ void GetPlantIndexs(const std::vector<GRID> &grid_lst,
             plant_type = plant.type();
             // 目标植物存在
             if (plant_type == type)
+            {
                 indexs[it - grid_lst.begin()] = index;
+            }
             // 目标植物不存在但是有其他植物
             else if (type != 16 && type != 30 && type != 33 &&
                      plant_type != 16 && plant_type != 30 && plant_type != 33) // 荷叶、南瓜、花盆
+            {
                 indexs[it - grid_lst.begin()] = -2;
+            }
         }
     }
     g_mu.unlock();
@@ -295,12 +307,12 @@ bool IsExplode(int row, int col)
             //如果存在小丑且开盒
             if (Ztype == 15 && zombie.status() == 16)
             {
-                if (Zrow == row - 1 && Zabsci < col * 80 + 42 && Zabsci > col * 80 - 162)
+                if (Zrow == row - 1 && Zabsci < col * 80 + 42 && Zabsci > col * 80 - 162 ||
+                    Zrow == row && Zabsci < col * 80 + 61 && Zabsci > col * 80 - 181 ||
+                    Zrow == row + 1 && Zabsci < col * 80 + 52 && Zabsci > col * 80 - 173)
+                {
                     return true;
-                else if (Zrow == row && Zabsci < col * 80 + 61 && Zabsci > col * 80 - 181)
-                    return true;
-                else if (Zrow == row + 1 && Zabsci < col * 80 + 52 && Zabsci > col * 80 - 173)
-                    return true;
+                }
             }
         }
     }

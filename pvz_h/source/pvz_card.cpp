@@ -1,18 +1,18 @@
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \pvz_h\source\pvz_card.cpp
+ * @Date: 2019-10-10 23:37:48
+ * @LastEditTime : 2020-01-02 22:55:15
+ * @Description: 卡片操作函数的实现
+ */
 
 #include "libpvz.h"
 #include "pvz_error.h"
 #include "pvz_global.h"
-#include <map>
 
 namespace pvz
 {
-
-extern std::map<std::string, int> seed_name_to_index;
-
-extern bool is_get_seed_index;
-
-extern std::string seed_name[11][8]; 
-
 //选择单张卡片
 //使用示例：
 //ChooseCard(1,2)----选择1行2列的卡片（不是模仿者）
@@ -58,6 +58,9 @@ void LetsRock()
 //选择多张卡片,根据卡片位置选择
 void SelectCards(const std::vector<SEED_INDEX> &lst)
 {
+    if (g_examine_level == CVZ_IGNORE_TIME)
+        return;
+        
     //在选卡界面进行选卡操作
     if (GameUi() == 2)
     {
@@ -112,7 +115,7 @@ void SelectCards(const std::vector<SEED_NAME> &lst)
                 PrintError("SelectCards第 %d 个卡片的名称'%s'未被录入，请参考pvz_data.h的卡片命名", i, e.seed_name.c_str());
             for (seed_lst[i].col = 0; seed_lst[i].col < 8; seed_lst[i].col++)
             {
-                if (e.seed_name == seed_name[seed_lst[i].row][seed_lst[i].col])
+                if (e.seed_name == g_seed_name[seed_lst[i].row][seed_lst[i].col])
                 {
                     //如果是模仿者卡片
                     if (seed_lst[i].row > 5)
@@ -219,29 +222,29 @@ void GetCardIndexForCardName()
         if (seed_type == 48)
         {
             seed_type = seed.imitatorType();
-            seed_info.first = seed_name[seed_type / 8 + 6][seed_type % 8];
+            seed_info.first = g_seed_name[seed_type / 8 + 6][seed_type % 8];
             seed_info.second = i;
         }
         else //if(seed_info != 48)
         {
-            seed_info.first = seed_name[seed_type / 8][seed_type % 8];
+            seed_info.first = g_seed_name[seed_type / 8][seed_type % 8];
             seed_info.second = i;
         }
-        seed_name_to_index.insert(seed_info);
+        g_seed_name_to_index.insert(seed_info);
     }
 }
 
 //根据卡片的名称用卡 单张 单位置
 void Card(const std::string &card_name, int row, float col)
 {
-    if (!is_get_seed_index)
+    if (!g_is_get_seed_index)
     {
         GetCardIndexForCardName();
-        is_get_seed_index = true;
+        g_is_get_seed_index = true;
     }
 
-    auto it = seed_name_to_index.find(card_name);
-    if (it == seed_name_to_index.end())
+    auto it = g_seed_name_to_index.find(card_name);
+    if (it == g_seed_name_to_index.end())
         PrintError("卡片名称'%s'未被录入pvz.h,或者您没有选择该卡片", card_name.c_str());
 
     Card(it->second + 1, row, col);
@@ -257,14 +260,14 @@ void Card(const std::vector<CARD_NAME> &lst)
 //根据名称使用卡片 单张 多位置
 void Card(const std::string &card_name, const std::vector<CARD> &lst)
 {
-    if (!is_get_seed_index)
+    if (!g_is_get_seed_index)
     {
         GetCardIndexForCardName();
-        is_get_seed_index = true;
+        g_is_get_seed_index = true;
     }
 
-    auto it = seed_name_to_index.find(card_name);
-    if (it == seed_name_to_index.end())
+    auto it = g_seed_name_to_index.find(card_name);
+    if (it == g_seed_name_to_index.end())
         PrintError("卡片名称'%s'未被录入pvz.h,或者您没有选择该卡片", card_name.c_str());
 
     //用卡

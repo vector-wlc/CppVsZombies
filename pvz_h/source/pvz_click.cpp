@@ -1,3 +1,11 @@
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \pvz_h\source\pvz_click.cpp
+ * @Date: 2019-10-10 23:15:47
+ * @LastEditTime : 2020-01-02 22:17:59
+ * @Description: 点击函数的实现
+ */
 
 #include "libpvz.h"
 #include "pvz_global.h"
@@ -6,6 +14,9 @@ namespace pvz
 {
 void LeftClick(int x, int y)
 {
+    if (g_examine_level == CVZ_IGNORE_TIME)
+        return;
+
     x /= g_DPI;
     y /= g_DPI;
     int position = ((x & 0xFFFF) << 16) | (y & 0xFFFF);
@@ -17,6 +28,9 @@ void LeftClick(int x, int y)
 //主要用于安全点击
 void RightClick(int x, int y)
 {
+    if (g_examine_level == CVZ_IGNORE_TIME)
+        return;
+        
     x /= g_DPI;
     y /= g_DPI;
     int position = ((x & 0xFFFF) << 16) | (y & 0xFFFF);
@@ -39,6 +53,9 @@ void SeedClick(int x, int y)
 //模拟敲击空格键
 void PressSpace()
 {
+    if (g_examine_level == CVZ_IGNORE_TIME)
+        return;
+
     PostMessage(g_hwnd, WM_KEYDOWN, VK_SPACE, 0);
     PostMessage(g_hwnd, WM_KEYUP, VK_SPACE, 0);
 }
@@ -47,10 +64,13 @@ void PressSpace()
 //此函数自动识别场景，只用于战斗界面
 //0: 白天, 1 : 黑夜, 2 : 泳池, 3 : 浓雾, 4 : 屋顶, 5 : 月夜, 6 : 蘑菇园, 7 : 禅境花园, 8 : 水族馆, 9 : 智慧树.
 //使用示例：
-//Click(3, 4)------点击场地上3行4列
-//Click(3, 4, 10)-----点击场地上3行4列再向下偏移10px
+//SceneClick(3, 4)------点击场地上3行4列
+//SceneClick(3, 4, 10)-----点击场地上3行4列再向下偏移10px
 void SceneClick(float row, float col, int offset)
 {
+    if (g_examine_level == CVZ_IGNORE_TIME)
+        return;
+
     int x, y;
     y = 80 * col;
     //如果为泳池和迷雾
