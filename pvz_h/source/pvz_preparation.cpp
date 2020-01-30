@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_preparation.cpp
  * @Date: 2019-10-10 23:47:03
- * @LastEditTime : 2020-01-03 15:09:48
+ * @LastEditTime : 2020-01-27 15:29:27
  * @Description: 程序进入 main 和退出 main 的一些准备
  */
 
@@ -41,8 +41,10 @@ CvZPreparation::~CvZPreparation()
     //当游戏未结束
     while (GameUi() == 3)
         Sleep(1000);
+
     //恢复游戏原来的内存信息
     pao_cvz.setResolveConflictType(PaoOperator::COLLECTION);
+    StopMaidCheats();
 
     if (g_handle != nullptr)
         CloseHandle(g_handle);
@@ -99,16 +101,14 @@ void CvZPreparation::some_preparations()
         Sleep(10);
     }
 
-    //获取一些内存地址
-    g_mainobject = ReadMemory<int>(g_pvzbase + 0x768);
-    g_mouse_offset = ReadMemory<int>(g_pvzbase + 0x320);
-    g_scene = ReadMemory<int>(g_mainobject + 0x554C);
-    
-    pao_cvz.resetPaoList();
-    pao_cvz.setResolveConflictType(PaoOperator::COLLECTION);
-
-    //自动开启自动收集线程
+    g_mainobject = ReadMemory<uintptr_t>(g_pvzbase + 0x768);
+    g_scene = ReadMemory<uintptr_t>(g_mainobject + 0x554C);
     item_collector.start();
+    pao_cvz.resetPaoList();
+
+    //恢复游戏原来的内存信息
+    pao_cvz.setResolveConflictType(PaoOperator::COLLECTION);
+    StopMaidCheats();
 
     std::printf("\t##############################\n\n\t\tGame Start!\n\n\t##############################\n\n");
 }

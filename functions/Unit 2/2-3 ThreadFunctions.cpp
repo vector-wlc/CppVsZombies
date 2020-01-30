@@ -1,13 +1,18 @@
-
-// 此文件主要介绍 CvZ 自带的子线程函数
-// 注意一个自动线程函数只能创建一个线程，因为只有一个与之匹配的停止线程运行函数
-// 下一单元将介绍如何创建多个相似功能的线程，所以在这里根本不用慌，嘻嘻
-
-// 自动存冰 : StartAutoFillIceThread
-// 自动修坚果 : StartAutoFixNutThread
-// 自动种植垫材 : StartAutoSetDianCaiThread
-// 女仆秘籍 : StartPreventDancerAdvance
-// 自动收集 : StartAutoCollectThread
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \CppVsZombies\functions\Unit 2\2-3 ThreadFunctions.cpp
+ * @Date: 2019-08-31 09:16:29
+ * @LastEditTime : 2020-01-30 12:57:22
+ * @Description: 此文件主要介绍 CvZ 自带的子线程函数
+ *               注意一个自动线程函数只能创建一个线程，因为只有一个与之匹配的停止线程运行函数
+ *               下一单元将介绍如何创建多个相似功能的线程，所以在这里根本不用慌，嘻嘻
+ *               自动存冰 : StartAutoFillIceThread
+ *               自动修坚果 : StartAutoFixNutThread
+ *               自动种植垫材 : StartAutoSetDianCaiThread
+ *               女仆秘籍 : StartPreventDancerAdvance
+ *               自动收集 : StartAutoCollectThread
+ */
 
 #include "pvz.h"
 
@@ -32,9 +37,6 @@ int main()
     // 将第 1 张卡片设为垫材，只垫第 5 6 行，而且第二行从第六列开始垫，第四行从第七列开始垫，垫 红眼 白眼 橄榄
     StartAutoSetDianCaiThread({1}, {{5, 6}, {6, 7}}, {23, 32, 7}); // It's not allowed!
 
-    // 开启女仆秘籍
-    StartPreventDancerAdvance();
-
     // 开启自动收集，此函数框架自动调用，不需要用户书写
     StartAutoCollectThread();
 
@@ -45,7 +47,6 @@ int main()
     StopAutoFillIceThread();
     StopAutoFixNutThread();
     StopAutoSetDianCaiThread();
-    StopPreventDancerAdvance();
     StopAutoCollectThread();
 
     return 0;

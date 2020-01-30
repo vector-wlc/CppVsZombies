@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_card.cpp
  * @Date: 2019-10-10 23:37:48
- * @LastEditTime : 2020-01-02 22:55:15
+ * @LastEditTime : 2020-01-27 16:27:59
  * @Description: 卡片操作函数的实现
  */
 
@@ -13,6 +13,7 @@
 
 namespace pvz
 {
+
 //选择单张卡片
 //使用示例：
 //ChooseCard(1,2)----选择1行2列的卡片（不是模仿者）
@@ -55,20 +56,41 @@ void LetsRock()
     }
 }
 
+//进行一些对模仿者误点的处理
+void DealWrongClickFromImitator()
+{
+    int zombie_cnt_max = pvz::ZombieMemory::countMax();
+    pvz::ZombieMemory zombie_memory;
+    for (int index = 0; index < zombie_cnt_max; ++index)
+    {
+        zombie_memory.setIndex(index);
+        // 如果僵尸在模仿者旁边，将其移开
+        if (zombie_memory.isExist() &&
+            zombie_memory.abscissa() < 930 &&
+            zombie_memory.ordinate() > 370)
+        {
+            pvz::WriteMemory<float>(930, pvz::g_mainobject + 0x90, 0x2C + 0x15C * index);
+        }
+    }
+}
+
 //选择多张卡片,根据卡片位置选择
 void SelectCards(const std::vector<SEED_INDEX> &lst)
 {
     if (g_examine_level == CVZ_IGNORE_TIME)
         return;
-        
+
     //在选卡界面进行选卡操作
     if (GameUi() == 2)
     {
+        DealWrongClickFromImitator();
         Sleep(2000);
         SeedMemory seed;
         int slots_count = seed.slotsCount();
         if (slots_count != lst.size())
+        {
             PrintError("选择的卡片数目与卡槽位数目不符");
+        }
         //开始选卡
         while (1)
         {
@@ -145,17 +167,9 @@ void SelectCards(const std::vector<SEED_NAME> &lst)
     SelectCards(seed_lst);
 }
 
-//使用卡片：单张 单位置
-void Card(int x, int row, float col)
+// 基础用卡函数
+void UseSeed(int x, int row, float col)
 {
-    if (g_examine_level != CVZ_NO)
-    {
-        SeedMemory seed(x - 1);
-        int seed_CD = seed.CD();
-        if (seed_CD)
-            PrintError("第 %d 张卡片还有 %dcs 才能使用", x, seed.initialCD() - seed_CD);
-    }
-
     g_mu.lock();
     RightClick(1, 1);
     LeftClick(70, 50 + 50 * x);
@@ -166,24 +180,8 @@ void Card(int x, int row, float col)
     g_mu.unlock();
 }
 
-//使用卡片：多张 每张卡片只定义一个位置
-void Card(const std::vector<CARD_INDEX> &lst)
+void UseSeed(int x, const std::vector<CARD> &lst)
 {
-    for (const auto &e : lst)
-        Card(e.x, e.row, e.col);
-}
-
-//使用卡片：单张 多位置
-void Card(int x, const std::vector<CARD> &lst)
-{
-    if (g_examine_level != CVZ_NO)
-    {
-        SeedMemory seed(x - 1);
-        int seed_CD = seed.CD();
-        if (seed_CD)
-            PrintError("第 %d 张卡片还有 %dcs 才能使用", x, seed.initialCD() - seed_CD);
-    }
-
     g_mu.lock();
     RightClick(1, 1);
     LeftClick(70, 50 + 50 * x);
@@ -202,75 +200,165 @@ void Card(int x, const std::vector<CARD> &lst)
 }
 
 //为卡片名称变量获取卡片对象序列
-void GetCardIndexForCardName()
-{
-    SeedMemory seed;
-    //等待游戏开始
-    while (GameUi() != 3)
-        Sleep(1);
-
-    int seed_counts = seed.slotsCount();
-    int seed_type;
-    std::pair<std::string, int> seed_info;
-
-    for (int i = 0; i < seed_counts; i++)
-    {
-        //得到卡片类型
-        seed.setIndex(i);
-        seed_type = seed.type();
-        //如果是模仿者卡片
-        if (seed_type == 48)
-        {
-            seed_type = seed.imitatorType();
-            seed_info.first = g_seed_name[seed_type / 8 + 6][seed_type % 8];
-            seed_info.second = i;
-        }
-        else //if(seed_info != 48)
-        {
-            seed_info.first = g_seed_name[seed_type / 8][seed_type % 8];
-            seed_info.second = i;
-        }
-        g_seed_name_to_index.insert(seed_info);
-    }
-}
-
-//根据卡片的名称用卡 单张 单位置
-void Card(const std::string &card_name, int row, float col)
+int GetSeedIndexFromSeedName(const std::string &seed_name)
 {
     if (!g_is_get_seed_index)
     {
-        GetCardIndexForCardName();
+        SeedMemory seed;
+        //等待游戏开始
+        while (GameUi() != 3)
+            Sleep(1);
+
+        int seed_counts = seed.slotsCount();
+        int seed_type;
+        std::pair<std::string, int> seed_info;
+
+        for (int i = 0; i < seed_counts; ++i)
+        {
+            //得到卡片类型
+            seed.setIndex(i);
+            seed_type = seed.type();
+            //如果是模仿者卡片
+            if (seed_type == 48)
+            {
+                seed_type = seed.imitatorType();
+                seed_info.first = g_seed_name[seed_type / 8 + 6][seed_type % 8];
+                seed_info.second = i;
+            }
+            else //if(seed_info != 48)
+            {
+                seed_info.first = g_seed_name[seed_type / 8][seed_type % 8];
+                seed_info.second = i;
+            }
+            g_seed_name_to_index.insert(seed_info);
+        }
         g_is_get_seed_index = true;
     }
 
-    auto it = g_seed_name_to_index.find(card_name);
+    auto it = g_seed_name_to_index.find(seed_name);
     if (it == g_seed_name_to_index.end())
-        PrintError("卡片名称'%s'未被录入pvz.h,或者您没有选择该卡片", card_name.c_str());
+        PrintError("卡片名称'%s'未被录入pvz.h,或者您没有选择该卡片", seed_name.c_str());
 
-    Card(it->second + 1, row, col);
+    return it->second;
+}
+
+//使用卡片：单张 单位置
+void Card(int x, int row, float col)
+{
+    if (g_examine_level != CVZ_NO)
+    {
+        SeedMemory seed(x - 1);
+        int seed_CD = seed.CD();
+        if (seed_CD)
+            PrintError("第 %d 张卡片还有 %dcs 才能使用", x, seed.initialCD() - seed_CD);
+    }
+    UseSeed(x, row, col);
+}
+
+//使用卡片：多张 每张卡片只定义一个位置
+void Card(const std::vector<CARD_INDEX> &lst)
+{
+    for (const auto &each : lst)
+    {
+        Card(each.x, each.row, each.col);
+    }
+}
+
+//使用卡片：单张 多位置
+void Card(int x, const std::vector<CARD> &lst)
+{
+    if (g_examine_level != CVZ_NO)
+    {
+        SeedMemory seed(x - 1);
+        int seed_CD = seed.CD();
+        if (seed_CD)
+            PrintError("第 %d 张卡片还有 %dcs 才能使用", x, seed.initialCD() - seed_CD);
+    }
+
+    UseSeed(x, lst);
+}
+
+//根据名称使用卡片：单张单位置
+void Card(const std::string &seed_name, int row, float col)
+{
+    int seed_index = GetSeedIndexFromSeedName(seed_name);
+    Card(seed_index + 1, row, col);
 }
 
 //根据名称使用卡片：多张 每张卡片只定义一个位置
 void Card(const std::vector<CARD_NAME> &lst)
 {
-    for (const auto &e : lst)
-        Card(e.card_name, e.row, e.col);
+    for (const auto &each : lst)
+    {
+        Card(each.name, each.row, each.col);
+    }
 }
 
-//根据名称使用卡片 单张 多位置
-void Card(const std::string &card_name, const std::vector<CARD> &lst)
+void Card(const std::string &seed_name, const std::vector<CARD> &lst)
 {
-    if (!g_is_get_seed_index)
+    int seed_index = GetSeedIndexFromSeedName(seed_name);
+    Card(seed_index + 1, lst);
+}
+
+// 等待种子可用
+void WaitSeedUsable(int seed_index)
+{
+    SeedMemory seed_memory(seed_index);
+    while (!seed_memory.isUsable())
     {
-        GetCardIndexForCardName();
-        g_is_get_seed_index = true;
+        Sleep(1);
+    }
+}
+
+void RecoverCard(int x, int row, float col)
+{
+    WaitSeedUsable(x - 1);
+    UseSeed(x, row, col);
+}
+
+void RecoverCard(const std::vector<CARD_INDEX> &lst)
+{
+    for (const auto &seed : lst)
+    {
+        WaitSeedUsable(seed.x - 1);
     }
 
-    auto it = g_seed_name_to_index.find(card_name);
-    if (it == g_seed_name_to_index.end())
-        PrintError("卡片名称'%s'未被录入pvz.h,或者您没有选择该卡片", card_name.c_str());
-
-    //用卡
-    Card(it->second + 1, lst);
+    for (const auto &each : lst)
+    {
+        UseSeed(each.x, each.row, each.col);
+    }
 }
+
+void RecoverCard(int x, const std::vector<CARD> &lst)
+{
+    WaitSeedUsable(x - 1);
+    UseSeed(x, lst);
+}
+
+void RecoverCard(const std::string &seed_name, int row, float col)
+{
+    int seed_index = GetSeedIndexFromSeedName(seed_name);
+    RecoverCard(seed_index + 1, row, col);
+}
+
+void RecoverCard(const std::vector<CARD_NAME> &lst)
+{
+    std::vector<CARD_INDEX> card_indexs;
+    CARD_INDEX card_index;
+    for (const auto &each : lst)
+    {
+        card_index.x = GetSeedIndexFromSeedName(each.name) + 1;
+        card_index.row = each.row;
+        card_index.col = each.col;
+        card_indexs.push_back(card_index);
+    }
+    RecoverCard(card_indexs);
+}
+
+void RecoverCard(const std::string &seed_name, const std::vector<CARD> &lst)
+{
+    int seed_index = GetSeedIndexFromSeedName(seed_name);
+    RecoverCard(seed_index + 1, lst);
+}
+
 } // namespace pvz

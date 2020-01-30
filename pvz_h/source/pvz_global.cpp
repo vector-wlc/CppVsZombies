@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_global.cpp
  * @Date: 2019-10-10 23:49:51
- * @LastEditTime : 2020-01-02 21:55:07
+ * @LastEditTime : 2020-01-27 15:52:32
  * @Description: 包含 CvZ 用到的所有全局变量               
  */
 
@@ -22,9 +22,8 @@ int g_examine_level = 1; //检查等级 : CVZ_ERROR
 std::mutex g_mu;         //互斥锁
 HWND g_hwnd;
 HANDLE g_handle;
-int g_pvzbase;                   //基址
-int g_mainobject;                //游戏对象地址
-int g_mouse_offset;              //鼠标偏移地址
+uintptr_t g_pvzbase;    //基址
+uintptr_t g_mainobject; //游戏对象地址
 
 //  time
 int g_zombie_refresh_time = 0;
@@ -64,8 +63,7 @@ std::vector<std::pair<char, std::function<void()>>> g_key_operations;
 
 // class
 FillIce ice_filler;
-FixNut nut_fixer;
-NvPuMiJi nv_pu_mi_ji;
+FixPlant nut_fixer;
 PlaceDianCai dian_cai_placer;
 PaoOperator pao_cvz;
 CollectItem item_collector;

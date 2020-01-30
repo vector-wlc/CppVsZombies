@@ -3,7 +3,7 @@
 // 此程序是一个读取内存进行全自动挂机的入门示范
 // 阵型 ：传统四炮.改
 // 打法 ：非冰即炸
-// 在此程序中，我们不适用框架自带的修补坚果类，来自己编写自动修补坚果函数
+// 在此程序中，我们不使用框架自带的修补坚果类，来自己编写自动修补坚果函数
 // 有时，橄榄红眼可能会啃到大喷，这时需要我们使用倭瓜来减压
 // 对于用炮、灰烬和冰，我们要利用 TryPao 的返回值来规划
 // 对于气球，直接读取内存使用三叶草即可
@@ -13,7 +13,7 @@
 using namespace pvz;
 
 // 枚举卡片的对象序列
-enum SEED
+enum SeedIndex
 {
     ICE_SHROOM = 0,      //寒冰菇
     ICE_SHROOM_IMITATOR, //模仿寒冰菇
@@ -58,13 +58,7 @@ int main()
     ice_filler.start({{3, 6}, {4, 6}});
     dian_cai_placer.start({10}, {{1, 7}, {6, 7}});
     dian_cai_placer.resetProtectedPlantList({{1, 5}, {6, 5}});
-
-    // 得到第一波出怪类型
-    // 如果有舞王再进行女仆秘籍
     std::vector<int> zombie_type;
-    GetWaveZombieType(zombie_type, 1);
-    if (find(zombie_type.begin(), zombie_type.end(), 8) != zombie_type.end())
-        nv_pu_mi_ji.start();
 
     RunningInThread(FixPumpkin);
     RunningInThread(UseClover);
@@ -131,9 +125,9 @@ void UseClover()
                 ballon_zombie.setIndex(index);
                 // 如果气球僵尸快飞到家了
                 if (ballon_zombie.isExist() &&
-                    ballon_zombie.type() == 16 &&
+                    ballon_zombie.type() == QQ_16 &&
                     !ballon_zombie.isDead() &&
-                    ballon_zombie.abscissa() <= 0.5 * 80)
+                    ballon_zombie.abscissa() <= 2.5 * 80)
                 {
                     // 种植三叶草
                     Card(CLOVER + 1, 2, 7);
@@ -146,7 +140,7 @@ void UseClover()
 
 void FixPumpkin()
 {
-    SeedMemory pumpkin_seed(PUMPKIN); // 首先创建一个读取倭瓜卡片内存信息的对象
+    SeedMemory pumpkin_seed(PUMPKIN); //首先创建一个读取南瓜卡片内存信息的对象
     PlantMemory pumpkin;              //再创建一个读取植物内存信息的对象
 
     int index, plant_count_max;

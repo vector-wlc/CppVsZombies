@@ -1,9 +1,14 @@
-
-// 此文件将介绍自动存冰对象和女仆秘籍对象
-
-// 自动存冰对象 ：ice_filler
-// 女仆秘籍对象 ：nv_pu_mi_ji
-// 以上的对象是 CvZ 自带的，就是已经被创建好的，用户可以直接使用
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \CppVsZombies\functions\Unit 3\3-3 AutoClass2.cpp
+ * @Date: 2019-09-02 14:41:21
+ * @LastEditTime : 2020-01-30 12:57:14
+ * @Description: 此文件将介绍自动存冰对象和女仆秘籍对象
+ *               自动存冰对象 ：ice_filler
+ *               女仆秘籍对象 ：nv_pu_mi_ji
+ *               以上的对象是 CvZ 自带的，就是已经被创建好的，用户可以直接使用
+ */
 
 #include "pvz.h"
 
@@ -37,24 +42,6 @@ int main()
 
     KeyConnect('Y', [&]() {
         ice_filler.stop(); //停止存冰
-    });
-
-    // 将 nv_pu_mi_ji 的所有接口与 KeyConnect 相结合
-
-    KeyConnect('A', [&]() {
-        nv_pu_mi_ji.start(); //开始女仆秘籍
-    });
-    
-    KeyConnect('S', [&]() {
-        nv_pu_mi_ji.pause(); //暂停女仆秘籍
-    });
-
-    KeyConnect('D', [&]() {
-        nv_pu_mi_ji.goOn(); //继续女仆秘籍
-    });
-
-    KeyConnect('F', [&]() {
-        nv_pu_mi_ji.stop(); //停止女仆秘籍
     });
 
     return 0;

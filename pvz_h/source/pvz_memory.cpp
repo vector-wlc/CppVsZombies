@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_memory.cpp
  * @Date: 2019-10-10 23:35:37
- * @LastEditTime : 2020-01-02 23:11:46
+ * @LastEditTime : 2020-01-29 13:12:57
  * @Description: 内存读取函数及相关类的实现
  */
 
@@ -109,8 +109,6 @@ void WaitGameStart()
 {
     while (GameUi() != 3)
         Sleep(1);
-    //为获取卡片对象序列函数争取时间
-    Sleep(100);
 }
 
 //等待游戏结束
@@ -126,7 +124,7 @@ int GetSeedIndex(int type, bool imitator)
 {
     SeedMemory seed;
     int slot_count = seed.slotsCount();
-    for (int i = 0; i < slot_count; i++)
+    for (int i = 0; i < slot_count; ++i)
     {
         seed.setIndex(i);
         if (imitator)
@@ -144,8 +142,7 @@ int GetSeedIndex(int type, bool imitator)
 //当参数type为默认值-1时该函数无视南瓜花盆荷叶
 //使用示例：
 //GetPlantIndex(3,4)------如果三行四列有除南瓜花盆荷叶之外的植物时，返回该植物的对象序列，否则返回-1
-//GetPlantIndex(3,4,47)---如果三行四列有春哥，返回其对象序列，否则返回-1
-//GetPlantIndex(3,4,33)---如果三行四列有花盆，返回其对象序列，否则返回-1
+//GetPlantIndex(3,4,47)---如果三行四列有春哥，返回其对象序列，如果有其他植物，返回-2，否则返回-1
 int GetPlantIndex(int row, int col, int type)
 {
     PlantMemory plant;
@@ -158,14 +155,23 @@ int GetPlantIndex(int row, int col, int type)
             (plant.row() + 1 == row) && (plant.col() + 1 == col))
         {
             plant_type = plant.type();
-            if (type == -1) //如果植物存在	且不为南瓜花盆荷叶
+            if (type == -1)
             {
+                //如果植物存在	且不为南瓜花盆荷叶
                 if ((plant_type != 16) && (plant_type != 30) && (plant_type != 33))
                     return i; //返回植物的对象序列
             }
-            else if (plant_type == type)
+            else
             {
-                return i;
+                if (plant_type == type)
+                {
+                    return i;
+                }
+                else if (type != 16 && type != 30 && type != 33 &&
+                         plant_type != 16 && plant_type != 30 && plant_type != 33)
+                {
+                    return -2;
+                }
             }
         }
     }
@@ -238,8 +244,10 @@ bool ExamineZombieExist(int type, int row)
                     return true;
             }
             else //if (type >= 0 && row < 0)
+            {
                 if (zombie.type() == type)
-                return true;
+                    return true;
+            }
     }
 
     return false;
@@ -351,24 +359,40 @@ bool IsHammering(int row, int col, bool pumpkin)
 }
 
 //得到僵尸出怪类型
-void GetZombieType(std::vector<int> &type_list)
+void GetZombieType(std::vector<int> &zombie_type_list)
 {
-    type_list.clear();
-    for (int i = 0; i < 33; i++)
-        if (ReadMemory<bool>(g_mainobject + 0x54D4 + i))
-            type_list.push_back(i);
+    zombie_type_list.clear();
+
+    ZombieMemory zombie_memory;
+    int zombie_cnt_max = zombie_memory.countMax();
+    int zombie_type = 0;
+    for (int index = 0; index < zombie_cnt_max; ++index)
+    {
+        zombie_memory.setIndex(index);
+        if (!zombie_memory.isExist())
+        {
+            continue;
+        }
+        zombie_type = zombie_memory.type();
+        if (std::find(zombie_type_list.begin(), zombie_type_list.end(), zombie_type) == zombie_type_list.end())
+        {
+            zombie_type_list.push_back(zombie_type);
+        }
+    }
 }
 
 //得到相应波数的出怪类型
-void GetWaveZombieType(std::vector<int> &zombie_type, int _wave)
+void GetWaveZombieType(std::vector<int> &zombie_type_list, int _wave)
 {
     int type = 0;
-    zombie_type.clear();
-    for (int i = (_wave - 1) * 50; i < _wave * 50; i++)
+    zombie_type_list.clear();
+    for (int i = (_wave - 1) * 50; i < _wave * 50; ++i)
     {
         type = ReadMemory<int>(g_mainobject + 0x6B4 + i * 4);
-        if (std::find(zombie_type.begin(), zombie_type.end(), type) == zombie_type.end())
-            zombie_type.push_back(type);
+        if (std::find(zombie_type_list.begin(), zombie_type_list.end(), type) == zombie_type_list.end())
+        {
+            zombie_type_list.push_back(type);
+        }
     }
 }
 } // namespace pvz

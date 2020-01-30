@@ -2,18 +2,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",	
-            "type": "cppdbg", 		
-            "request": "launch",	
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
             "program": "${workspaceRoot}\\output\\${fileBasenameNoExtension}.exe",
-            "args": [],				
-            "stopAtEntry": false, 	
+            "args": [],
+            "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [],
             "externalConsole": true,
             "MIMode": "gdb",
             "miDebuggerPath": "E:\\setup\\MinGW\\bin\\gdb32.exe",
-            "preLaunchTask": "g++",	
+            "preLaunchTask": "g++",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

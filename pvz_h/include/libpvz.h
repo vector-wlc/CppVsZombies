@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \CppVsZombies\pvz_h\include\libpvz.h
  * @Date: 2019-12-21 15:19:54
- * @LastEditTime : 2020-01-02 21:58:19
+ * @LastEditTime : 2020-01-29 18:59:35
  * @Description: PvZ TAS Framework C++ vs. Zombies
  *               This framework references Python vs. Zombies
  *               @lmintlcx https://pvz.lmintlcx.com/scripts/pvz.py/
@@ -63,9 +63,8 @@ inline void RunningInThread(FUNC func, Args... args)
 //########## memory basic functions ###############
 
 extern HANDLE g_handle;
-extern int g_mainobject;
-extern int g_pvzbase;
-extern int g_mouse_offset;
+extern uintptr_t g_mainobject;
+extern uintptr_t g_pvzbase;
 
 //读取内存函数
 //ReadMemory<data type>(address);
@@ -106,8 +105,8 @@ void WriteMemory(T value, Args... args)
 class AbstractMemory
 {
 protected:
-    int offset; //地址偏移
-    int index;  //对象序列/栈位/序号...
+    uintptr_t offset; //地址偏移
+    int index;        //对象序列/栈位/序号...
 
 public:
     AbstractMemory() { offset = index = 0; }
@@ -230,6 +229,7 @@ public:
         return ReadMemory<int>(offset + 0x40 + 0x14C * index);
     }
 
+    //生效倒计时
     int activeCountdown()
     {
         return ReadMemory<int>(offset + 0x50 + 0x14C * index);
@@ -473,13 +473,13 @@ public:
 
     //返回需要收集物品的数目
     //包括金币 钻石 礼盒等
-    int count()
+    static int count()
     {
         return ReadMemory<int>(g_mainobject + 0xF4);
     }
 
     //返回需要收集物品的最大数目
-    int countMax()
+    static int countMax()
     {
         return ReadMemory<int>(g_mainobject + 0xE8);
     }
@@ -511,12 +511,6 @@ public:
 
 //########## memory functions ###############
 
-//判断鼠标是否在游戏窗口内
-inline bool MouseInGame()
-{
-    return ReadMemory<bool>(g_mainobject + 0x59);
-}
-
 //返回鼠标所在行
 inline int MouseRow()
 {
@@ -526,7 +520,7 @@ inline int MouseRow()
 //返回鼠标所在列
 inline float MouseCol()
 {
-    return 1.0 * ReadMemory<int>(g_mouse_offset + 0xE0) / 80;
+    return 1.0 * ReadMemory<int>(g_pvzbase + 0x320, 0xE0) / 80;
 }
 
 //判断游戏是否暂停
@@ -586,6 +580,18 @@ inline int GameUi()
     return ReadMemory<int>(g_pvzbase + 0x7FC);
 }
 
+//启动女仆秘籍
+inline void StartMaidCheats()
+{
+    WriteMemory<byte>(0x71, 0x52DFE8);
+}
+
+//停止女仆秘籍
+inline void StopMaidCheats()
+{
+    WriteMemory<byte>(0x7F, 0x52DFE8);
+}
+
 //等待游戏开始
 void WaitGameStart();
 
@@ -602,8 +608,7 @@ int GetSeedIndex(int type, bool imitator = false);
 //当参数type为默认值-1时该函数无视南瓜花盆荷叶
 //使用示例：
 //GetPlantIndex(3,4)------如果三行四列有除南瓜花盆荷叶之外的植物时，返回该植物的对象序列，否则返回-1
-//GetPlantIndex(3,4,47)---如果三行四列有春哥，返回其对象序列，否则返回-1
-//GetPlantIndex(3,4,33)---如果三行四列有花盆，返回其对象序列，否则返回-1
+//GetPlantIndex(3,4,47)---如果三行四列有春哥，返回其对象序列，如果有其他植物，返回-2，否则返回-1
 int GetPlantIndex(int row, int col, int type = -1);
 
 //用于储存位置信息
@@ -639,9 +644,9 @@ struct GRID
 //参数2：填写指定类型
 //参数3：得到对象序列，此函数按照位置的顺序填写对象序列
 //注意：如果没有植物填写-1，如果有植物但是不是指定类型，会填写-2
-void GetPlantIndexs(const std::vector<GRID> &grid_lst,
-                    int type,
-                    std::vector<int> &indexs);
+void GetPlantIndexs(const std::vector<GRID> &grid_lst_in_,
+                    int type_in_,
+                    std::vector<int> &indexs_out_);
 
 //检查僵尸是否存在
 //使用示例
@@ -669,12 +674,13 @@ bool IsHammering(int row, int col, bool pumpkin = false);
 bool IsExplode(int row, int col);
 
 //得到僵尸出怪类型
+//注意：此函数最好在选卡界面使用
 //参数为 vector 数组
 //使用示例：
 //std::vector<int>zombies_type;
 //GetZombieType(zombies_type);
 //僵尸的出怪类型将会储存在数组 zombies_type 中
-void GetZombieType(std::vector<int> &type_list);
+void GetZombieType(std::vector<int> &zombie_type_list_out_);
 
 //得到相应波数的出怪类型
 //参数为 vector 数组
@@ -683,7 +689,7 @@ void GetZombieType(std::vector<int> &type_list);
 //GetWaveZombieType(zombies_type);-------得到当前波数出怪类型
 //GetWaveZombieType(zombies_type, 1);-------得到第一波出怪类型
 //僵尸的出怪类型将会储存在数组 zombies_type 中
-void GetWaveZombieType(std::vector<int> &zombie_type, int _wave = wave);
+void GetWaveZombieType(std::vector<int> &zombie_type_list_out_, int _wave_in_ = wave);
 
 // ########################### time #####################
 
@@ -693,7 +699,7 @@ void GetWaveZombieType(std::vector<int> &zombie_type, int _wave = wave);
 //使用示例：
 //Prejudge(-95,wave)-----僵尸刷新前95cs进行接下来的操作
 //Prejudge(100,wave)-----僵尸刷新后100cs进行接下来的操作
-void Prejudge(int t, int wave);
+void Prejudge(int time, int wave);
 
 //时间延迟函数（以游戏内部时钟为基准）
 //使用示例：
@@ -815,15 +821,7 @@ void SelectCards(const std::vector<SEED_INDEX> &lst);
 //SelectCards({{"hbg"}, {"Mhbg"}, {"kfd"}, {"wg"}, {"ytzd"}, {"ngt"}, {"xpg"}, {"yyg"}, {"dxg"}, {"xrk"}});
 void SelectCards(const std::vector<SEED_NAME> &lst);
 
-//用卡函数
-//使用示例：
-//Card(1,2,3)---------选取第1张卡片，放在2行,3列
-//Card({{1,2,3},{2,3,4}})------选取第1张卡片，放在2行,3列，选取第2张卡片，放在3行,4列
-//Card(1,{{2,3},{3,4}})--------选取第1张卡片，优先放在2行,3列，其次放在3行,4列
-//以下用卡片名称使用Card,卡片名称为拼音首字母，具体参考pvz_data.h的命名
-//Card({{"ytzd",2,3},{"Mhblj",3,4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
-void Card(int x, int row, float col);
-
+//用于用卡函数
 struct CARD
 {
     int row;
@@ -841,55 +839,34 @@ struct CARD_INDEX
 //用于选卡函数(根据名称用卡)
 struct CARD_NAME
 {
-    std::string card_name;
+    std::string name;
     int row;
     float col;
 };
 
 //用卡函数
 //使用示例：
-//Card(1,2,3)---------选取第1张卡片，放在2行,3列
-//Card({{1,2,3},{2,3,4}})------选取第1张卡片，放在2行,3列，选取第2张卡片，放在3行,4列
-//Card(1,{{2,3},{3,4}})--------选取第1张卡片，优先放在2行,3列，其次放在3行,4列
+//Card(1, 2, 3)---------选取第1张卡片，放在2行,3列
+//Card({{1, 2, 3}, {2, 3, 4}})------选取第1张卡片，放在2行,3列，选取第2张卡片，放在3行,4列
+//Card(1, {{2, 3}, {3, 4}})--------选取第1张卡片，优先放在2行,3列，其次放在3行,4列
 //以下用卡片名称使用Card,卡片名称为拼音首字母，具体参考pvz_data.h的命名
-//Card({{"ytzd",2,3},{"Mhblj",3,4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
+//Card({{"ytzd", 2, 3}, {"Mhblj", 3, 4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
 void Card(const std::vector<CARD_INDEX> &lst);
-
-//用卡函数
-//使用示例：
-//Card(1,2,3)---------选取第1张卡片，放在2行,3列
-//Card({{1,2,3},{2,3,4}})------选取第1张卡片，放在2行,3列，选取第2张卡片，放在3行,4列
-//Card(1,{{2,3},{3,4}})--------选取第1张卡片，优先放在2行,3列，其次放在3行,4列
-//以下用卡片名称使用Card,卡片名称为拼音首字母，具体参考pvz_data.h的命名
-//Card({{"ytzd",2,3},{"Mhblj",3,4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
+void Card(int x, int row, float col);
 void Card(int x, const std::vector<CARD> &lst);
-
-//用卡函数
-//使用示例：
-//Card(1,2,3)---------选取第1张卡片，放在2行,3列
-//Card({{1,2,3},{2,3,4}})------选取第1张卡片，放在2行,3列，选取第2张卡片，放在3行,4列
-//Card(1,{{2,3},{3,4}})--------选取第1张卡片，优先放在2行,3列，其次放在3行,4列
-//以下用卡片名称使用Card,卡片名称为拼音首字母，具体参考pvz_data.h的命名
-//Card({{"ytzd",2,3},{"Mhblj",3,4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
-void Card(const std::string &card_name, int row, float col);
-
-//用卡函数
-//使用示例：
-//Card(1,2,3)---------选取第1张卡片，放在2行,3列
-//Card({{1,2,3},{2,3,4}})------选取第1张卡片，放在2行,3列，选取第2张卡片，放在3行,4列
-//Card(1,{{2,3},{3,4}})--------选取第1张卡片，优先放在2行,3列，其次放在3行,4列
-//以下用卡片名称使用Card,卡片名称为拼音首字母，具体参考pvz_data.h的命名
-//Card({{"ytzd",2,3},{"Mhblj",3,4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
+void Card(const std::string &seed_name, int row, float col);
 void Card(const std::vector<CARD_NAME> &lst);
+void Card(const std::string &seed_name, const std::vector<CARD> &lst);
 
-//用卡函数
-//使用示例：
-//Card(1,2,3)---------选取第1张卡片，放在2行,3列
-//Card({{1,2,3},{2,3,4}})------选取第1张卡片，放在2行,3列，选取第2张卡片，放在3行,4列
-//Card(1,{{2,3},{3,4}})--------选取第1张卡片，优先放在2行,3列，其次放在3行,4列
-//以下用卡片名称使用Card,卡片名称为拼音首字母，具体参考pvz_data.h的命名
-//Card({{"ytzd",2,3},{"Mhblj",3,4}})---------选取樱桃卡片，放在2行,3列，选取辣椒卡片，放在3行,4列
-void Card(const std::string &card_name, const std::vector<CARD> &lst);
+//等待卡片恢复立即用卡
+//使用方法与 Card 相同
+//需要注意的是一次使用多张卡片时会等待卡片全部恢复时才开始种植
+void RecoverCard(const std::vector<CARD_INDEX> &lst);
+void RecoverCard(int x, const std::vector<CARD> &lst);
+void RecoverCard(int x, int row, float col);
+void RecoverCard(const std::vector<CARD_NAME> &lst);
+void RecoverCard(const std::string &seed_name, int row, float col);
+void RecoverCard(const std::string &seed_name, const std::vector<CARD> &lst);
 
 // 炮操作类
 class PaoOperator
@@ -915,7 +892,7 @@ private:
     };
 
     //用于RAWPAO函数
-    struct RAWPAO
+    struct RAW_PAO
     {
         int pao_row;
         int pao_col;
@@ -939,13 +916,15 @@ private:
         int min_fly_time; //记录最小的飞行时间
     };
 
-    static int conflict_resolution_type;     //冲突解决方式
-    static std::map<GRID, PAO_INFO> all_pao; //所有炮的信息
-    std::vector<PaoIterator> paolist;        //炮列表，记录炮的迭代器信息
-    int nowpao;                              //记录当前即将发射的下一门炮
-    bool limit_pao_sequence = true;          //是否限制炮序
+    static int conflict_resolution_type;          //冲突解决方式
+    static std::map<GRID, PAO_INFO> all_pao_list; //所有炮的信息
+    std::vector<PaoIterator> pao_list;            //炮列表，记录炮的迭代器信息
+    int next_pao;                                 //记录当前即将发射的下一门炮
+    bool limit_pao_sequence = true;               //是否限制炮序
 
     static const FLY_TIME fly_time_data[8];
+    //禁用 = 运算符
+    void operator=(PaoOperator) {}
     //对炮进行一些检查
     static void pao_examine(PaoIterator it, int now_time, int drop_row, float drop_col);
     //检查落点
@@ -998,19 +977,19 @@ public:
     //rawRoofPao({ {1,2,2,9},{1,3,5,9}})-------将位置为（1，2）的炮发射到（2，9），将位置为（1，3）的炮发射到（5，9）
     static void rawRoofPao(int pao_row, int pao_col, int drop_row, float drop_col);
 
-
     //发炮函数：用户自定义位置发射，屋顶修正飞行时间发炮.
     //注意：尽量不要使用此函数操作位于炮列表中的炮，因为使用此函数后自动识别的炮序与UpdatePaolist更新的炮序将无效！
     //使用示例：
     //rawRoofPao(1,2,2,9)-----------------------将位置为（1，2）的炮发射到（2，9）
     //rawRoofPao({ {1,2,2,9},{1,3,5,9}})-------将位置为（1，2）的炮发射到（2，9），将位置为（1，3）的炮发射到（5，9）
-    static void rawRoofPao(const std::vector<RAWPAO> &lst);
+    static void rawRoofPao(const std::vector<RAW_PAO> &lst);
 
-    //铲炮
+    //铲炮：该函数不能铲除有炮序限制的炮，除非强制
     //注意：使用此函数后需要注意对炮列表的隐形改变
     //使用示例
     //shovelPao(2, 3)-------铲除 (2, 3) 位置的炮，并且更新炮的信息
-    static void shovelPao(int row, int col);
+    //shovelPao(2, 3, true)-------无视炮序，强制铲除 (2, 3) 位置的炮，并且更新炮的信息
+    static void shovelPao(int row, int col, bool is_forced = false);
 
     //种炮
     //注意：使用此函数后需要注意对炮列表的隐形改变
@@ -1023,26 +1002,43 @@ public:
     }
 
     //铲种炮函数  已不推荐使用  注：shovelPao plantPao 灵活性更高
+    //该函数不能铲除有炮序限制的炮，除非强制
     //使用示例：
     //fixPao(3,4)------------铲种(3,4)位置的炮
     //fixPao(3,4,1)--------铲掉(3,4)位置的炮，将炮种植在(3,4+1)位置上/位移铲种炮
-    static void fixPao(int row, int col, int move_col = 0, int delay_time = 0);
+    //fixPao(3,4,0,0,true)--------无视炮序，强制铲种(3,4)位置的炮
+    static void fixPao(int row, int col, int move_col = 0, int delay_time = 0, bool is_forced = false);
 
     //发炮函数：用户自定义位置发射
-    //注意：尽量不要使用此函数操作位于炮列表中的炮，因为使用此函数后自动识别的炮序与 resetPaolist 更新的炮序将无效！
+    //注意：尽量不要使用此函数操作位于有炮序炮列表中的炮，因为使用此函数后自动识别的炮序与 resetPaolist 更新的炮序将无效！
     //使用示例：
     //rawPao(1,2,2,9)-----------------------将位置为（1，2）的炮发射到（2，9）
     //rawPao({{1, 2, 2, 9}, {1, 3, 5, 9}})-------将位置为（1，2）的炮发射到（2，9），将位置为（1，3）的炮发射到（5，9）
     static void rawPao(int pao_row, int pao_col, int drop_row, float drop_col);
 
     //发炮函数：用户自定义位置发射
-    //注意：尽量不要使用此函数操作位于炮列表中的炮，因为使用此函数后自动识别的炮序与UpdatePaolist更新的炮序将无效！
+    //注意：尽量不要使用此函数操作位于有炮序炮列表中的炮，因为使用此函数后自动识别的炮序与 resetPaolist 更新的炮序将无效！
     //使用示例：
     //rawPao(1,2,2,9)-----------------------将位置为（1，2）的炮发射到（2，9）
     //rawPao({{1, 2, 2, 9}, {1, 3, 5, 9}})-------将位置为（1，2）的炮发射到（2，9），将位置为（1，3）的炮发射到（5，9）
-    static void rawPao(const std::vector<RAWPAO> &lst);
+    static void rawPao(const std::vector<RAW_PAO> &lst);
 
-    //构造函数，完成变量初始化
+    //炮的状态
+    struct PAO_STATUS
+    {
+        int row;          //所在行
+        int col;          //所在列
+        int cd;           //剩余的冷却时间
+        int index;        //对象序列
+        bool is_shoveled; //是否被铲
+    };
+
+    //得到场上所有炮的状态
+    static void getAllPaoStatusList(std::vector<PAO_STATUS> &lst_out_);
+
+    //得到场上现在所有能用的炮的位置列表
+    static void getAllRecoveredPaoList(std::vector<GRID> &lst_out_);
+
     PaoOperator(const std::vector<GRID> &lst);
     PaoOperator();
     ~PaoOperator();
@@ -1075,7 +1071,7 @@ public:
     //skipao(2)---跳过按照顺序即将要发射的2门炮
     void skipPao(int x)
     {
-        nowpao = (nowpao + x) % paolist.size();
+        next_pao = (next_pao + x) % pao_list.size();
     }
 
     //发炮函数
@@ -1144,8 +1140,20 @@ public:
 
     //尝试铲种炮函数
     //使用示例：
-    //fixPao()------------尝试铲种即将发射的下一门炮，该函数不支持位移铲种，也不支持延迟时间，因为没有意义
+    //tryFixPao()------------尝试铲种即将发射的下一门炮，该函数不支持位移铲种，也不支持延迟时间，因为没有意义
     void tryFixPao();
+
+    //发炮函数 炮CD恢复自动尝试发炮
+    //使用示例：
+    //tryRecoverPao(2,9)----------------炮击二行，九列
+    //tryRecoverPao({ {2,9},{5,9} })-----炮击二行，九列，五行，九列
+    void tryRecoverPao(int row, float col);
+
+    //发炮函数 炮CD恢复自动尝试发炮
+    //使用示例：
+    //tryRecoverPao(2,9)----------------炮击二行，九列
+    //tryRecoverPao({ {2,9},{5,9} })-----炮击二行，九列，五行，九列
+    void tryRecoverPao(const std::vector<PAO> &lst);
 
     ////////////////////////////////// 下面是不受模式限制使用的成员
 
@@ -1160,6 +1168,12 @@ public:
     //resetPaoList({{3, 1},{4, 1},{3, 3},{4, 3}})-------经典四炮
     //resetPaoList()-------将场上所有剩余的未在炮列表的炮全部重置到此列表
     void resetPaoList();
+
+    //得到本列表中能用的炮
+    void getRecoveredPaoList(std::vector<GRID> &lst_out_);
+
+    //得到本炮列表中炮的状态
+    void getPaoStatusList(std::vector<PAO_STATUS> &lst_out_);
 };
 
 //CvZ自定义炮类对象
@@ -1167,40 +1181,26 @@ extern PaoOperator pao_cvz;
 
 // ################# auto thread ########################
 
-//自动操作线程基类的基类 =_=
-class BaseBaseAutoThread
+//自动操作线程基类
+class BaseAutoThread
 {
 protected:
-    bool pause_;           //暂停，线程仍在运行
-    bool stop_;            //停止，线程不再运行
-    int interval_;         //检测间隔
+    bool is_paused;        //暂停，线程仍在运行
+    bool is_stoped;        //停止，线程不再运行
+    int time_interval;     //检测间隔
     void error_messages(); //错误信息
 
 public:
-    BaseBaseAutoThread() : pause_(false), stop_(true), interval_(100) {}
-    virtual ~BaseBaseAutoThread() {}
-    //调用此函数使得线程停止运行
-    void stop() { stop_ = true; }
-    //调用此函数使得线程暂停运行
-    void pause() { pause_ = true; }
-    //调用此函数使得线程继续运行
-    void goOn() { pause_ = false; }
-    //调用此函数改变检测间隔
-    void setInterval(int interval) { interval_ = interval; }
-};
-
-//自动操作函数基类
-class BaseAutoThread : public BaseBaseAutoThread
-{
-protected:
-    int leaf_seed_index;
-    std::vector<GRID> grid_lst; //记录位置信息
-    //重置填充列表
-    void base_reset_list(const std::vector<GRID> &lst);
-
-public:
-    BaseAutoThread();
+    BaseAutoThread() : is_paused(false), is_stoped(true), time_interval(100) {}
     virtual ~BaseAutoThread() {}
+    //调用此函数使得线程停止运行
+    void stop() { is_stoped = true; }
+    //调用此函数使得线程暂停运行
+    void pause() { is_paused = true; }
+    //调用此函数使得线程继续运行
+    void goOn() { is_paused = false; }
+    //调用此函数改变检测间隔
+    void setInterval(int interval) { time_interval = interval; }
 };
 
 //自动存用冰类
@@ -1214,21 +1214,23 @@ public:
 class FillIce : public BaseAutoThread
 {
 private:
+    struct ICE_SEED_MSG
+    {
+        int index;
+        int recover_time;
+    };
+    std::vector<GRID> grid_lst;
     void use_ice();
-    std::vector<int> ice_plant_indexs;
-    int coffee_index;
+    int coffee_seed_index;
 
 public:
-    FillIce();
+    FillIce() : BaseAutoThread() { time_interval = 5; }
     ~FillIce() {}
 
     //重置存冰位置
     //使用示例：
     //resetFillList({{3,4},{5,6}})-----将存冰位置重置为{3，4}，{5，6}
-    void resetFillList(const std::vector<GRID> &lst)
-    {
-        base_reset_list(lst);
-    }
+    void resetFillList(const std::vector<GRID> &lst);
 
     //线程开始工作
     //使用示例：
@@ -1238,7 +1240,7 @@ public:
     //使用咖啡豆函数
     //使用示例：
     //coffee()-----自动使用优先级低的存冰位
-    void coffee();
+    void coffee() const;
 };
 
 //自动存用冰类对象：使用此对象可以使您更愉快的管理存冰
@@ -1251,85 +1253,52 @@ public:
 //coffee：使用咖啡豆，激活存冰，使用方法与Coffee相同
 extern FillIce ice_filler;
 
-//自动修补坚果类
-//public成员函数介绍：
-//start：开始修补坚果，使用此函数将会开启一个线程用于修补坚果，用法与StartAutoFixNutThread相同
-//stop：停止修补坚果，使用此函数会使得修补坚果线程停止运行
-//pause：修补坚果暂停，使用此函数会暂停修补坚果任务，但是线程在不断运行
-//goOn：继续修补坚果，使用此函数使得修补坚果线程继续工作
-//resetList：重置存冰列表，使用方法与StartAutoFixNutThread相同
-//resetFixHp：重置修补血量，使用示例：reset_fix_hp(300)-----当坚果的血量下降至300时进行修补
-class FixNut : public BaseAutoThread
+class FixPlant : public BaseAutoThread
 {
 public:
-    FixNut();
-    ~FixNut() {}
+    FixPlant() : BaseAutoThread() {}
+    ~FixPlant() {}
 
-    //重置坚果修补位置
+    //重置植物修补位置
     //使用示例：
     //resetFixList({{2,3},{3,4}})-------位置被重置为{2，3}，{3，4}
-    void resetFixList(const std::vector<GRID> &lst);
+    void resetFixList(const std::vector<GRID> &lst) { grid_lst = lst; } // 这里不再进行任何检查
+
+    //自动得到修补的位置列表
+    void autoGetFixList();
 
     //线程开始工作，此函数开销较大，不建议多次调用
-    //第一个参数为坚果类型：3--坚果，23--高坚果，30--南瓜头
+    //第一个参数为植物类型
     //第二个参数不填默认全场
-    //第三个参数不填默认刚一开始损坏就修补
+    //第三个参数不填默认植物血量为150以下时修补
     //使用示例：
     //start(23)-------修补全场的高坚果
     //start(30,{{1,3},{2,3}})-----修补位置为{1，3}，{2，3}位置的南瓜头
     //start(3,{{1,3},{2,3}},300)------修补位置为{1，3}，{2，3}位置的坚果，血量降至300开始修补
-    void start(int nut_type, const std::vector<GRID> &lst = {}, int fix_hp = 8000);
+    void start(int _plant_type, const std::vector<GRID> &lst = {}, int _fix_hp = 150);
 
     //重置修补血量
     //使用示例：
     //resetFixHp(200)------将修补触发血量改为200
-    void resetFixHp(int fix_hp);
+    void resetFixHp(int _fix_hp);
+
+    //是否使用咖啡豆
+    void isUseCoffee(bool _is_use_coffee) { is_use_coffee = _is_use_coffee; }
 
 private:
-    int nut_type_;
-    int nut_seed_index;
-    int fix_hp_;
-    std::vector<int> nut_plant_indexs;
-    void update_nut();
+    bool is_use_coffee = false;
+    int plant_type;
+    int fix_hp = 0;
+    int coffee_seed_index;
+    int leaf_seed_index;
+    std::vector<int> seed_index_vec;
+    std::vector<GRID> grid_lst;
+    void get_seed_list();
+    void update_plant();
+    bool use_seed(int seed_index, int row, float col, bool is_need_shovel);
 };
 
-//自动修补坚果类对象
-//public成员函数介绍：
-//start：开始修补坚果，使用此函数将会开启一个线程用于修补坚果，用法与StartAutoFixNutThread相同
-//stop：停止修补坚果，使用此函数会使得修补坚果线程停止运行
-//pause：修补坚果暂停，使用此函数会暂停修补坚果任务，但是线程在不断运行
-//goOn：继续修补坚果，使用此函数使得修补坚果线程继续工作
-//resetList：重置存冰列表，使用方法与StartAutoFixNutThread相同
-//resetFixHp：重置修补血量，使用示例：reset_fix_hp(300)-----当坚果的血量下降至300时进行修补
-extern FixNut nut_fixer;
-
-//女仆秘籍类
-//public成员函数介绍
-//start：开始女仆秘籍，
-//stop：停止女仆秘籍，
-//pause：暂停女仆秘籍，
-//goOn：继续女仆秘籍，
-class NvPuMiJi : public BaseBaseAutoThread
-{
-public:
-    NvPuMiJi();
-    ~NvPuMiJi() {}
-
-    //开启女仆秘籍
-    void start();
-
-private:
-    //停止舞伴前进
-    void stop_dancer_advance() const;
-};
-
-//女仆秘籍类对象
-//public成员函数介绍
-//start：开始女仆秘籍，
-//stop：停止女仆秘籍，
-//pause：暂停女仆秘籍，
-//goOn：继续女仆秘籍，
-extern NvPuMiJi nv_pu_mi_ji;
+extern FixPlant nut_fixer;
 
 //自动放置垫材类
 //start：开始放置垫材，使用此函数会开辟一个线程用于放置垫材，使用方法与StartAutoSetDianCaiThread相同
@@ -1340,7 +1309,7 @@ extern NvPuMiJi nv_pu_mi_ji;
 //resetProtectedPlantList：重置保护植物位置列表
 //resetDianCaiSeedList：重置被用来当作垫材的植物
 //resetZombieTypeList：重置需要垫的僵尸
-class PlaceDianCai : public BaseBaseAutoThread
+class PlaceDianCai : public BaseAutoThread
 {
 private:
     //记录一些放置垫材的信息
@@ -1352,9 +1321,9 @@ private:
         bool is_plantble;          //是否要种植物
     };
 
-    std::vector<PLACE_MESSAGE> place_message_;
-    std::vector<int> lst_plant_;
-    std::vector<int> lst_zombie_;
+    std::vector<PLACE_MESSAGE> place_message_list;
+    std::vector<int> diancai_plant_type_list;
+    std::vector<int> prevent_zombie_type_list;
     PlantMemory plant;
     ZombieMemory zombie;
     void get_min_absci_zombie();
@@ -1385,12 +1354,12 @@ public:
     //重置被当作垫材的植物
     //使用示例：
     //resetDianCaiSeedList({1,2,3})----将第1 2 3张卡片设置为垫材
-    void resetDianCaiSeedList(const std::vector<int> &lst) { lst_plant_ = lst; }
+    void resetDianCaiSeedList(const std::vector<int> &lst) { diancai_plant_type_list = lst; }
 
     //重置要垫的僵尸类型
     //使用示例：
     //resetZombieTypeList({23,32,0})-----将要垫的僵尸改为 白眼 红眼 普僵
-    void resetZombieTypeList(const std::vector<int> &lst) { lst_zombie_ = lst; }
+    void resetZombieTypeList(const std::vector<int> &lst) { prevent_zombie_type_list = lst; }
 
     //重置垫材放置位置列表
     //使用示例：
@@ -1399,18 +1368,9 @@ public:
     void resetSetDianCaiList();
 };
 
-//自动放置垫材类对象
-//start：开始放置垫材，使用此函数会开辟一个线程用于放置垫材，使用方法与StartAutoSetDianCaiThread相同
-//stop：停止放置垫材，使用此函数会使得放置垫材线程停止运行
-//pause：放置垫材暂停，使用此函数会暂停放置垫材任务，但是线程在不断运行
-//goOn：继续放置垫材，使用此函数使得放置垫材线程继续工作
-//resetSetDianCaiList：重置垫材优先放置列表
-//resetProtectedPlantList：重置保护植物位置列表
-//resetDianCaiSeedList：重置被用来当作垫材的植物
-//resetZombieTypeList：重置需要垫的僵尸
 extern PlaceDianCai dian_cai_placer;
 
-class CollectItem : public BaseBaseAutoThread
+class CollectItem : public BaseAutoThread
 {
 public:
     CollectItem();
@@ -1424,7 +1384,7 @@ extern CollectItem item_collector;
 
 // ########################  mode select #################
 
-enum Examine
+enum ExamineType
 {
     CVZ_NO,
     CVZ_ERROR,
@@ -1438,6 +1398,92 @@ enum Examine
 //pvz::CVZ_INFO : 输出操作信息
 //pvz::CVZ_IGNORE_TIME : 进行无视时间调试
 void OpenExamine(int level = CVZ_INFO);
+
+// ################ enumeration of plants and zombies #########
+
+// 植物类型
+enum PlantType
+{
+    WDSS_0,   // 豌豆射手
+    XRK_1,    // 向日葵
+    YTZD_2,   // 樱桃炸弹
+    JG_3,     // 坚果
+    TDDL_4,   // 土豆地雷
+    HBSS_5,   // 寒冰射手
+    DZH_6,    // 大嘴花
+    SCSS_7,   // 双重射手
+    XPG_8,    // 小喷菇
+    YGG_9,    // 阳光菇
+    DPG_10,   // 大喷菇
+    MBTSZ_11, // 墓碑吞噬者
+    MHG_12,   // 魅惑菇
+    DXG_13,   // 胆小菇
+    HBG_14,   // 寒冰菇
+    HMG_15,   // 毁灭菇
+    HY_16,    // 荷叶
+    WG_17,    // 倭瓜
+    SFSS_18,  // 三发射手
+    CRHZ_19,  // 缠绕海藻
+    HBLJ_20,  // 火爆辣椒
+    DC_21,    // 地刺
+    HJSZ_22,  // 火炬树桩
+    GJG_23,   // 高坚果
+    SBG_24,   // 水兵菇
+    LDH_25,   // 路灯花
+    XRZ_26,   // 仙人掌
+    SYC_27,   // 三叶草
+    LJSS_28,  // 裂荚射手
+    YT_29,    // 杨桃
+    NGT_30,   // 南瓜头
+    CLG_31,   // 磁力菇
+    JXCTS_32, // 卷心菜投手
+    HP_33,    // 花盆
+    YMTS_34,  // 玉米投手
+    KFD_35,   // 咖啡豆
+    DS_36,    // 大蒜
+    YZBHS_37, // 叶子保护伞
+    JZH_38,   // 金盏花
+    XGTS_39,  // 西瓜投手
+    JQSS_40,  // 机枪射手
+    SZXRK_41, // 双子向日葵
+    YYG_42,   // 忧郁菇
+    XP_43,    // 香蒲
+    BXGTS_44, // 冰西瓜投手
+    XJC_45,   // 吸金磁
+    DCW_46,   // 地刺王
+    YMJNP_47  // 玉米加农炮
+};
+
+enum ZombieType
+{
+    PJ_0 = 0,  // 普僵
+    QZ_1,      // 旗帜
+    LZ_2,      // 路障
+    CG_3,      // 撑杆
+    TT_4,      // 铁桶
+    DB_5,      // 读报
+    TM_6,      // 铁门
+    GL_7,      // 橄榄
+    WW_8,      // 舞王
+    BW_9,      // 伴舞
+    YZ_10,     // 鸭子
+    QS_11,     // 潜水
+    BC_12,     // 冰车
+    XQ_13,     // 雪橇
+    HT_14,     // 海豚
+    XC_15,     // 小丑
+    QQ_16,     // 气球
+    KG_17,     // 矿工
+    TT_18,     // 跳跳
+    XR_19,     // 雪人
+    BJ_20,     // 蹦极
+    FT_21,     // 扶梯
+    TL_22,     // 投篮
+    BY_23,     // 白眼
+    XG_24,     // 小鬼
+    JB_25,     // 僵博
+    HY_32 = 32 // 红眼
+};
 
 } // namespace pvz
 

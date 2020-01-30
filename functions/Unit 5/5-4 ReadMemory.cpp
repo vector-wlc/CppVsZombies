@@ -1,3 +1,11 @@
+/*
+ * @coding: utf-8
+ * @Author: Chu Wenlong
+ * @FilePath: \CppVsZombies\functions\Unit 5\5-4 ReadMemory.cpp
+ * @Date: 2019-09-12 21:57:37
+ * @LastEditTime : 2020-01-16 15:53:07
+ * @Description: 
+ */
 
 // 此文件介绍一个非常重要的函数 ReadMemory
 
@@ -30,16 +38,15 @@ int main()
     // ││ ├─44  // 血值上限
 
     using pvz::ReadMemory;
-    using std::cout;
-    using std::endl;
-    int pvz_mainobject = ReadMemory<int>(0x6A9EC0, 0x768); // 记录游戏主要对象地址
 
-    cout << ReadMemory<int>(pvz_mainobject + 0x5564) << endl; // 打印总波数
-    cout << ReadMemory<int>(pvz_mainobject + 0x5568) << endl; // 打印游戏时钟
+    uintptr_t x = ReadMemory<uintptr_t>(0x6A9EC0, 0x768, 0x138);
 
-    int plant_offset = ReadMemory<int>(pvz_mainobject + 0xAC); // 记录植物内存地址偏移
-
-    cout << ReadMemory<int>(plant_offset + 0x14C * 35 + 0x24); // 打印栈位为 2 的植物类型
-
+    while (true)
+    {
+        Sleep(10);
+        system("cls");
+        std::cout << ReadMemory<int>(0x28 + x);
+    }
+    system("pause");
     return 0;
 }

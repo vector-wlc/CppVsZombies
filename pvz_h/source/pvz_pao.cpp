@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_pao.cpp
  * @Date: 2019-10-10 23:44:07
- * @LastEditTime : 2020-01-03 13:51:59
+ * @LastEditTime : 2020-01-29 15:03:35
  * @Description: 炮操作类的实现
  */
 
@@ -13,7 +13,7 @@
 
 namespace pvz
 {
-std::map<GRID, PaoOperator::PAO_INFO> PaoOperator::all_pao;
+std::map<GRID, PaoOperator::PAO_INFO> PaoOperator::all_pao_list;
 const PaoOperator::FLY_TIME PaoOperator::fly_time_data[8] = {
     {515, 359}, {499, 362}, {515, 364}, {499, 367}, {515, 369}, {499, 372}, {511, 373}, {511, 373}};
 int PaoOperator::conflict_resolution_type = PaoOperator::COLLECTION;
@@ -46,7 +46,38 @@ void PaoOperator::get_all_pao_message()
             else //如果炮不能用，则恢复时间为现在时间 + 倒计时 + 125
                 pao_message.second.recover_time = now_time + cannon.statusCountdown() + 125;
 
-            all_pao.insert(pao_message);
+            all_pao_list.insert(pao_message);
+        }
+    }
+}
+
+void PaoOperator::getAllPaoStatusList(std::vector<PAO_STATUS> &lst_out_)
+{
+    lst_out_.clear();
+    int now_time = GameClock();
+    int pao_cd;
+    PAO_STATUS pao_status;
+    for (const auto &pao_msg : all_pao_list)
+    {
+        pao_status.row = pao_msg.first.row;
+        pao_status.col = pao_msg.first.col;
+        pao_status.index = pao_msg.second.index;
+        pao_cd = pao_msg.second.recover_time - now_time;
+        pao_status.cd = pao_cd > 0 ? pao_cd : 0;
+        pao_status.is_shoveled = pao_msg.second.is_shoveled;
+        lst_out_.push_back(pao_status);
+    }
+}
+
+void PaoOperator::getAllRecoveredPaoList(std::vector<GRID> &lst)
+{
+    lst.clear();
+    int now_time = GameClock();
+    for (const auto &pao_msg : all_pao_list)
+    {
+        if (pao_msg.second.recover_time < now_time && !pao_msg.second.is_shoveled)
+        {
+            lst.push_back(pao_msg.first);
         }
     }
 }
@@ -54,21 +85,21 @@ void PaoOperator::get_all_pao_message()
 PaoOperator::PaoOperator()
 {
     limit_pao_sequence = true;
-    nowpao = 0;
+    next_pao = 0;
 }
 
 PaoOperator::PaoOperator(const std::vector<GRID> &lst)
 {
     resetPaoList(lst);
     limit_pao_sequence = true;
-    nowpao = 0;
+    next_pao = 0;
 }
 
 PaoOperator::~PaoOperator()
 {
     GRID pao_grid;
     //清除所有有关于本对象的炮列表
-    for (const auto &e : paolist)
+    for (const auto &e : pao_list)
     {
         e->second.is_in_list = false;
         e->second.is_in_sequence = false;
@@ -88,7 +119,7 @@ void PaoOperator::setResolveConflictType(int type)
 void PaoOperator::setLimitPaoSequence(bool limit)
 {
     limit_pao_sequence = limit;
-    for (auto it : paolist)
+    for (auto it : pao_list)
         it->second.is_in_sequence = limit;
 }
 
@@ -104,27 +135,33 @@ void PaoOperator::add_pao_message(int row, int col)
     cannon_status = cannon.status();
     //计算炮恢复时间
     if (cannon_status == 37)
+    {
         new_pao.second.recover_time = now_time;
+    }
     else if (cannon_status == 38) //如果正在发射则认为时该炮的全部CD
+    {
         new_pao.second.recover_time = now_time + 3475;
+    }
     else //如果炮不能用，则恢复时间为现在时间 + 倒计时 + 125
+    {
         new_pao.second.recover_time = now_time + cannon.statusCountdown() + 125;
+    }
     new_pao.first.row = row;
     new_pao.first.col = col;
 
     // 替换掉被铲除的炮
-    for (auto it = all_pao.begin(); it != all_pao.end(); ++it)
+    for (auto it = all_pao_list.begin(); it != all_pao_list.end(); ++it)
     {
         if (it->second.is_shoveled)
         {
             new_pao.second.is_in_list = it->second.is_in_list;
             new_pao.second.is_in_sequence = it->second.is_in_sequence;
-            all_pao.erase(it);
+            all_pao_list.erase(it);
             break;
         }
     }
 
-    all_pao.insert(new_pao);
+    all_pao_list.insert(new_pao);
 }
 
 void PaoOperator::plant_pao(int row, int col)
@@ -135,12 +172,21 @@ void PaoOperator::plant_pao(int row, int col)
     SeedMemory pitcher_seed(ymts - 1);
 
     int now_time = GameClock();
-
+    int plant_index;
     //种植玉米投手
     for (int i = col; i < col + 2; ++i)
     {
+        plant_index = GetPlantIndex(row, i, 34);
+
+        // 等待其他植物消失
+        while (plant_index == -2)
+        {
+            Sleep(1);
+            plant_index = GetPlantIndex(row, i, 34);
+        }
+
         //如果有需要种植玉米炮的地方
-        if (GetPlantIndex(row, i, 34) == -1)
+        if (plant_index == -1)
         {
             //种植玉米投手
             while (!pitcher_seed.isUsable())
@@ -166,9 +212,9 @@ void PaoOperator::changePaoMessage(int origin_row, int origin_col, int now_row, 
     // 参数为 0 不进行删除操作
     if (origin_row != 0 && origin_col != 0)
     {
-        auto change_pao = all_pao.find(GRID(origin_row, origin_col));
+        auto change_pao = all_pao_list.find(GRID(origin_row, origin_col));
 
-        if (change_pao != all_pao.end())
+        if (change_pao != all_pao_list.end())
         {
             change_pao->second.is_shoveled = true;
         }
@@ -191,31 +237,31 @@ void PaoOperator::changePaoMessage(int origin_row, int origin_col, int now_row, 
 //自动识别炮列表
 void PaoOperator::resetPaoList()
 {
-    static bool is_get_all_pao_message = false;
-    if (!is_get_all_pao_message)
+    static bool is_get_all_pao_list_message = false;
+    if (!is_get_all_pao_list_message)
     {
         get_all_pao_message();
-        is_get_all_pao_message = true;
+        is_get_all_pao_list_message = true;
     }
 
     //清除所有有关于本对象的炮列表
-    for (const auto &e : paolist)
+    for (const auto &e : pao_list)
     {
         e->second.is_in_list = false;
         e->second.is_in_sequence = false;
     }
 
     //重置炮列表
-    paolist.clear();
+    pao_list.clear();
 
     //寻找不在炮列表中的炮
-    for (auto it = all_pao.begin(); it != all_pao.end(); it++)
+    for (auto it = all_pao_list.begin(); it != all_pao_list.end(); ++it)
     {
         if (!(it->second.is_in_list) || !(it->second.is_shoveled))
         {
             it->second.is_in_list = true;
             it->second.is_in_sequence = limit_pao_sequence;
-            paolist.push_back(it);
+            pao_list.push_back(it);
         }
     }
 
@@ -223,12 +269,12 @@ void PaoOperator::resetPaoList()
     {
         std::printf("resetPaoList:\n\n");
         int i = 1;
-        for (const auto &pao_grid : paolist)
+        for (const auto &pao_grid : pao_list)
         {
             std::printf(" [%d, %d]", pao_grid->first.row, pao_grid->first.col);
             if (i % 4 == 0)
                 std::printf("\n");
-            i++;
+            ++i;
         }
         std::printf("\n\n");
     }
@@ -238,51 +284,88 @@ void PaoOperator::resetPaoList()
 void PaoOperator::resetPaoList(const std::vector<GRID> &lst)
 {
     //清除所有有关于本对象的炮列表
-    for (const auto &e : paolist)
+    for (const auto &pao_it : pao_list)
     {
-        e->second.is_in_list = false;
-        e->second.is_in_sequence = false;
+        pao_it->second.is_in_list = false;
+        pao_it->second.is_in_sequence = false;
     }
 
     //重置炮列表
-    paolist.clear();
+    pao_list.clear();
     PaoIterator it;
     for (const auto &pao_grid : lst)
     {
         //在总炮信息里面找不到则报错
-        it = all_pao.find(pao_grid);
-        if (it == all_pao.end() || it->second.is_shoveled)
+        it = all_pao_list.find(pao_grid);
+        if (it == all_pao_list.end() || it->second.is_shoveled)
+        {
             PrintError("请检查 (%d, %d) 是否为炮", pao_grid.row, pao_grid.col);
-
+        }
         //如果此炮在其它炮列表中
         if (it->second.is_in_list)
+        {
             PrintError("(%d, %d) 在其它炮列表中", pao_grid.row, pao_grid.col);
-
+        }
         it->second.is_in_list = true;
         it->second.is_in_sequence = limit_pao_sequence;
 
-        paolist.push_back(it);
+        pao_list.push_back(it);
     }
 }
 
-void PaoOperator::setNextPao(int next_pao)
+//得到本列表中能用的炮
+void PaoOperator::getRecoveredPaoList(std::vector<GRID> &lst_out_)
 {
-    if (next_pao > paolist.size())
-        PrintError("本炮列表中一共有 %d 门炮，您设的参数已溢出", paolist.size());
-    nowpao = next_pao - 1;
+    lst_out_.clear();
+    int now_time = GameClock();
+    for (const auto &pao_it : pao_list)
+    {
+        if (pao_it->second.recover_time < now_time && !pao_it->second.is_shoveled)
+        {
+            lst_out_.push_back(pao_it->first);
+        }
+    }
+}
+
+//得到本炮列表中炮的状态
+void PaoOperator::getPaoStatusList(std::vector<PAO_STATUS> &lst_out_)
+{
+    lst_out_.clear();
+    int now_time = GameClock();
+    int pao_cd;
+    PAO_STATUS pao_status;
+    for (const auto &pao_it : pao_list)
+    {
+        pao_status.row = pao_it->first.row;
+        pao_status.col = pao_it->first.col;
+        pao_status.index = pao_it->second.index;
+        pao_cd = pao_it->second.recover_time - now_time;
+        pao_status.cd = pao_cd > 0 ? pao_cd : 0;
+        pao_status.is_shoveled = pao_it->second.is_shoveled;
+        lst_out_.push_back(pao_status);
+    }
+}
+
+void PaoOperator::setNextPao(int temp_next_pao)
+{
+    if (temp_next_pao > pao_list.size())
+    {
+        PrintError("本炮列表中一共有 %d 门炮，您设的参数已溢出", pao_list.size());
+    }
+    next_pao = temp_next_pao - 1;
 }
 
 void PaoOperator::setNextPao(int row, int col)
 {
-    int next_pao = 0;
-    for (const auto &pao_grid : paolist)
+    int temp_next_pao = 0;
+    for (const auto &pao_grid : pao_list)
     {
         if (pao_grid->first.row == row && pao_grid->first.col == col)
         {
-            nowpao = next_pao;
+            next_pao = temp_next_pao;
             return;
         }
-        next_pao++;
+        ++temp_next_pao;
     }
 
     PrintError("请检查(%d, %d)是否在本炮列表中", row, col);
@@ -334,10 +417,13 @@ void PaoOperator::pao_examine(PaoIterator it, int now_time, int drop_row, float 
 {
     if (conflict_resolution_type == COLLECTION &&
         is_drop_conflict(it->first.row, it->first.col, drop_row, drop_col))
+    {
         PrintError("位于 (%d，%d) 的炮与落点(%d，%f)冲突", it->first.row, it->first.col, drop_row, drop_col);
-
+    }
     if (it->second.recover_time > now_time)
+    {
         PrintError("位于 (%d, %d) 的炮还有 %dcs 恢复", it->first.row, it->first.col, it->second.recover_time - now_time);
+    }
 }
 
 void PaoOperator::base_fire_pao(PaoIterator it, int now_time, int drop_row, float drop_col)
@@ -352,8 +438,10 @@ void PaoOperator::base_fire_pao(PaoIterator it, int now_time, int drop_row, floa
         break;
 
     case COLLECTION: //点击炮身三次
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; ++i)
+        {
             SceneClick(it->first.row, it->first.col);
+        }
         SceneClick(drop_row, drop_col);
         break;
     default:
@@ -363,7 +451,9 @@ void PaoOperator::base_fire_pao(PaoIterator it, int now_time, int drop_row, floa
     it->second.recover_time = now_time + 3475;
 
     if (g_examine_level == CVZ_INFO)
+    {
         std::printf("	Fire cannon from (%d, %d) to (%d, %3.2f)\n\n", it->first.row, it->first.col, drop_row, drop_col);
+    }
     g_mu.unlock();
 }
 
@@ -372,33 +462,37 @@ void PaoOperator::rawPao(int pao_row, int pao_col, int drop_row, float drop_col)
 {
     int now_time = GameClock();
 
-    auto it = all_pao.find(GRID(pao_row, pao_col));
+    auto it = all_pao_list.find(GRID(pao_row, pao_col));
 
-    if (it == all_pao.end())
+    if (it == all_pao_list.end())
+    {
         PrintError("请检查 (%d, %d) 是否为炮", pao_row, pao_col);
-
+    }
     if (g_examine_level != CVZ_NO)
+    {
         pao_examine(it, now_time, drop_row, drop_col);
-
+    }
     base_fire_pao(it, now_time, drop_row, drop_col);
 }
 
 //用户自定义炮位置发炮：多发
-void PaoOperator::rawPao(const std::vector<RAWPAO> &lst)
+void PaoOperator::rawPao(const std::vector<RAW_PAO> &lst)
 {
     int now_time = GameClock();
     PaoIterator it;
 
     for (const auto &e : lst)
     {
-        it = all_pao.find(GRID(e.pao_row, e.pao_col));
+        it = all_pao_list.find(GRID(e.pao_row, e.pao_col));
 
-        if (it == all_pao.end())
+        if (it == all_pao_list.end())
+        {
             PrintError("请检查 (%d, %d) 是否为炮", e.pao_row, e.pao_col);
-
+        }
         if (g_examine_level != CVZ_NO)
+        {
             pao_examine(it, now_time, e.drop_row, e.drop_col);
-
+        }
         base_fire_pao(it, now_time, e.drop_row, e.drop_col);
     }
 }
@@ -408,19 +502,20 @@ void PaoOperator::pao(int row, float col)
 {
     int now_time = GameClock();
     if (!limit_pao_sequence)
+    {
         PrintError("解除炮序限制，Pao系列函数不可使用！");
-    //防止多线程读取pvz::nowpao竞争
+    }
     g_mu.lock();
-    int next_pao = nowpao;
+    int temp_next_pao = next_pao;
     skipPao(1);
     g_mu.unlock();
 
     if (g_examine_level != CVZ_NO)
     {
-        pao_examine(paolist[next_pao], now_time, row, col);
+        pao_examine(pao_list[temp_next_pao], now_time, row, col);
     }
 
-    base_fire_pao(paolist[next_pao], now_time, row, col);
+    base_fire_pao(pao_list[temp_next_pao], now_time, row, col);
 }
 
 //发炮函数：多发
@@ -431,16 +526,18 @@ void PaoOperator::pao(const std::vector<PAO> &lst)
         PrintError("解除炮序限制，Pao系列函数不可使用！");
 
     g_mu.lock();
-    int next_pao = nowpao;
+    int temp_next_pao = next_pao;
     skipPao(lst.size());
     g_mu.unlock();
 
     for (const auto &drop_grid : lst)
     {
         if (g_examine_level != CVZ_NO)
-            pao_examine(paolist[next_pao], now_time, drop_grid.row, drop_grid.col);
-        base_fire_pao(paolist[next_pao], now_time, drop_grid.row, drop_grid.col);
-        next_pao = (next_pao + 1) % paolist.size();
+        {
+            pao_examine(pao_list[temp_next_pao], now_time, drop_grid.row, drop_grid.col);
+        }
+        base_fire_pao(pao_list[temp_next_pao], now_time, drop_grid.row, drop_grid.col);
+        temp_next_pao = (temp_next_pao + 1) % pao_list.size();
     }
 }
 
@@ -452,17 +549,18 @@ bool PaoOperator::tryPao(int row, float col)
     int now_time = GameClock();
 
     //寻找符合条件的炮
-    for (const auto e : paolist)
+    for (const auto &pao_it : pao_list)
     {
-        if (e->second.is_shoveled)
+        if (pao_it->second.is_shoveled)
             continue;
         //如果炮可用
-        if (e->second.recover_time <= now_time)
+        if (pao_it->second.recover_time <= now_time)
         {
-            if (conflict_resolution_type == DROP_POINT ||                                                            //克服落点冲突模式
-                (conflict_resolution_type == COLLECTION && !is_drop_conflict(e->first.row, e->first.col, row, col))) //克服收集物冲突模式
+            if (conflict_resolution_type == DROP_POINT || //克服落点冲突模式
+                (conflict_resolution_type == COLLECTION &&
+                 !is_drop_conflict(pao_it->first.row, pao_it->first.col, row, col))) //克服收集物冲突模式
             {
-                base_fire_pao(e, now_time, row, col);
+                base_fire_pao(pao_it, now_time, row, col);
                 return true;
             }
         }
@@ -482,18 +580,18 @@ bool PaoOperator::tryPao(const std::vector<PAO> &lst)
     for (const auto &drop_grid : lst)
     {
         //寻找符合条件的炮
-        for (const auto e : paolist)
+        for (const auto &pao_it : pao_list)
         {
-            if (e->second.is_shoveled)
+            if (pao_it->second.is_shoveled)
                 continue;
             //如果炮可用
-            if (e->second.recover_time <= now_time)
+            if (pao_it->second.recover_time <= now_time)
             {
-                if (conflict_resolution_type == DROP_POINT ||                                                                                //克服落点冲突模式
-                    (conflict_resolution_type == COLLECTION && !is_drop_conflict(e->first.row, e->first.col, drop_grid.row, drop_grid.col))) //克服收集物冲突模式
+                if (conflict_resolution_type == DROP_POINT ||                                                                                          //克服落点冲突模式
+                    (conflict_resolution_type == COLLECTION && !is_drop_conflict(pao_it->first.row, pao_it->first.col, drop_grid.row, drop_grid.col))) //克服收集物冲突模式
                 {
-                    base_fire_pao(e, now_time, drop_grid.row, drop_grid.col);
-                    success_num++;
+                    base_fire_pao(pao_it, now_time, drop_grid.row, drop_grid.col);
+                    ++success_num;
                     break;
                 }
             }
@@ -507,49 +605,36 @@ bool PaoOperator::tryPao(const std::vector<PAO> &lst)
 void PaoOperator::recoverPao(int row, float col)
 {
     if (!limit_pao_sequence)
+    {
         PrintError("解除炮序限制，Pao系列函数不可使用！");
-
+    }
     g_mu.lock();
-    int next_pao = nowpao;
+    int temp_next_pao = next_pao;
     skipPao(1);
     g_mu.unlock();
 
-    if (conflict_resolution_type == COLLECTION && is_drop_conflict(paolist[next_pao]->first.row, paolist[next_pao]->first.col, row, col))
-        PrintError("位于(%d，%d)的炮与落点(%d，%f)冲突", paolist[next_pao]->first.row, paolist[next_pao]->first.col, row, col);
-
-    PlantMemory cannon(paolist[next_pao]->second.index);
-
-    while (cannon.status() != 37)
+    if (conflict_resolution_type == COLLECTION && is_drop_conflict(pao_list[temp_next_pao]->first.row, pao_list[temp_next_pao]->first.col, row, col))
+    {
+        PrintError("位于(%d，%d)的炮与落点(%d，%f)冲突", pao_list[temp_next_pao]->first.row, pao_list[temp_next_pao]->first.col, row, col);
+    }
+    while (pao_list[temp_next_pao]->second.recover_time - 1 > GameClock())
+    {
         Sleep(1);
+    }
 
-    base_fire_pao(paolist[next_pao], GameClock(), row, col);
+    // 确保发炮
+    PlantMemory cannon_memory(pao_list[temp_next_pao]->second.index);
+    while (cannon_memory.status() != 37)
+        ;
+    base_fire_pao(pao_list[temp_next_pao], GameClock(), row, col);
 }
 
 //等待炮恢复立即用炮：多发
 void PaoOperator::recoverPao(const std::vector<PAO> &lst)
 {
-    if (!limit_pao_sequence)
-        PrintError("解除炮序限制，Pao系列函数不可使用！");
-
-    g_mu.lock();
-    int next_pao = nowpao;
-    skipPao(lst.size());
-    g_mu.unlock();
-
-    PlantMemory cannon;
-
     for (const auto &drop_grid : lst)
     {
-        if (conflict_resolution_type == COLLECTION && is_drop_conflict(paolist[next_pao]->first.row, paolist[next_pao]->first.col, drop_grid.row, drop_grid.col))
-            PrintError("位于(%d，%d)的炮与落点(%d，%f)冲突",
-                       paolist[next_pao]->first.row, paolist[next_pao]->first.col, drop_grid.row, drop_grid.col);
-
-        cannon.setIndex(paolist[next_pao]->second.index);
-        while (cannon.status() != 37)
-            Sleep(1);
-
-        base_fire_pao(paolist[next_pao], GameClock(), drop_grid.row, drop_grid.col);
-        next_pao = (next_pao + 1) % paolist.size();
+        recoverPao(drop_grid.row, drop_grid.col);
     }
 }
 
@@ -608,16 +693,16 @@ void PaoOperator::roofPao(int row, float col)
         PrintError("RoofPao函数只适用于 RE 与 ME ");
 
     g_mu.lock();
-    int roof_nowpao = nowpao;
+    int temp_next_pao = next_pao;
     skipPao(1);
     g_mu.unlock();
 
-    int fire_time = 387 - get_roof_fly_time(paolist[roof_nowpao]->first.col, col) + GameClock();
+    int fire_time = 387 - get_roof_fly_time(pao_list[temp_next_pao]->first.col, col) + GameClock();
     if (g_examine_level != CVZ_NO)
-        pao_examine(paolist[roof_nowpao], fire_time, row, col);
-    paolist[roof_nowpao]->second.recover_time = fire_time + 3475;
+        pao_examine(pao_list[temp_next_pao], fire_time, row, col);
+    pao_list[temp_next_pao]->second.recover_time = fire_time + 3475;
 
-    RunningInThread(base_fire_roof_pao, paolist[roof_nowpao], fire_time, row, col);
+    RunningInThread(base_fire_roof_pao, pao_list[temp_next_pao], fire_time, row, col);
 }
 
 void PaoOperator::roofPao(const std::vector<PAO> &lst)
@@ -634,19 +719,21 @@ void PaoOperator::roofPao(const std::vector<PAO> &lst)
     int now_time = GameClock();
 
     g_mu.lock();
-    int roof_nowpao = nowpao;
+    int temp_next_pao = next_pao;
     skipPao(lst.size());
     g_mu.unlock();
 
     for (const auto &drop_grid : lst)
     {
-        fire_time = 387 - get_roof_fly_time(paolist[roof_nowpao]->first.col, drop_grid.col) + now_time;
+        fire_time = 387 - get_roof_fly_time(pao_list[temp_next_pao]->first.col, drop_grid.col) + now_time;
         if (g_examine_level != CVZ_NO)
-            pao_examine(paolist[roof_nowpao], fire_time, drop_grid.row, drop_grid.col);
-        paolist[roof_nowpao]->second.recover_time = fire_time + 3475;
-        roof_pao_list[num] = {paolist[roof_nowpao], drop_grid.row, drop_grid.col, fire_time};
+        {
+            pao_examine(pao_list[temp_next_pao], fire_time, drop_grid.row, drop_grid.col);
+        }
+        pao_list[temp_next_pao]->second.recover_time = fire_time + 3475;
+        roof_pao_list[num] = {pao_list[temp_next_pao], drop_grid.row, drop_grid.col, fire_time};
         ++num;
-        roof_nowpao = (roof_nowpao + 1) % paolist.size();
+        temp_next_pao = (temp_next_pao + 1) % pao_list.size();
     }
 
     RunningInThread(base_fire_roof_paos, roof_pao_list);
@@ -663,19 +750,19 @@ bool PaoOperator::tryRoofPao(int row, float col)
     int fire_time;
     int now_time = GameClock();
     //寻找符合条件的炮
-    for (const auto e : paolist)
+    for (const auto &pao_it : pao_list)
     {
-        if (e->second.is_shoveled)
+        if (pao_it->second.is_shoveled)
             continue;
-        fire_time = 387 - get_roof_fly_time(e->first.col, col) + now_time;
+        fire_time = 387 - get_roof_fly_time(pao_it->first.col, col) + now_time;
         //如果炮可用
-        if (e->second.recover_time <= fire_time)
+        if (pao_it->second.recover_time <= fire_time)
         {
-            if (conflict_resolution_type == DROP_POINT ||                                                            //克服落点冲突模式
-                (conflict_resolution_type == COLLECTION && !is_drop_conflict(e->first.row, e->first.col, row, col))) //克服收集物冲突模式
+            if (conflict_resolution_type == DROP_POINT ||                                                                      //克服落点冲突模式
+                (conflict_resolution_type == COLLECTION && !is_drop_conflict(pao_it->first.row, pao_it->first.col, row, col))) //克服收集物冲突模式
             {
-                e->second.recover_time = fire_time + 3475;
-                RunningInThread(base_fire_roof_pao, e, fire_time, row, col);
+                pao_it->second.recover_time = fire_time + 3475;
+                RunningInThread(base_fire_roof_pao, pao_it, fire_time, row, col);
 
                 return true;
             }
@@ -688,11 +775,14 @@ bool PaoOperator::tryRoofPao(int row, float col)
 bool PaoOperator::tryRoofPao(const std::vector<PAO> &lst)
 {
     if (limit_pao_sequence)
+    {
         PrintError("由于炮序限制，tryPao系列函数不可使用！");
-    //检查函数运行环境
-    if (g_scene != 4 && g_scene != 5)
-        PrintError("RoofPao函数只适用于RE与ME");
+    }
 
+    if (g_scene != 4 && g_scene != 5)
+    {
+        PrintError("RoofPao函数只适用于RE与ME");
+    }
     std::vector<RP> roof_pao_list(lst.size());
     int now_time = GameClock();
     int fire_time;
@@ -701,19 +791,19 @@ bool PaoOperator::tryRoofPao(const std::vector<PAO> &lst)
     for (const auto &drop_grid : lst)
     {
         //寻找符合条件的炮
-        for (const auto &e : paolist)
+        for (const auto &pao_it : pao_list)
         {
-            if (e->second.is_shoveled)
+            if (pao_it->second.is_shoveled)
                 continue;
-            fire_time = 387 - get_roof_fly_time(e->first.col, drop_grid.col) + now_time;
+            fire_time = 387 - get_roof_fly_time(pao_it->first.col, drop_grid.col) + now_time;
             //如果炮可用
-            if (e->second.recover_time <= fire_time)
+            if (pao_it->second.recover_time <= fire_time)
             {
-                if (conflict_resolution_type == DROP_POINT ||                                                                                //克服落点冲突模式
-                    (conflict_resolution_type == COLLECTION && !is_drop_conflict(e->first.row, e->first.col, drop_grid.row, drop_grid.col))) //克服收集物冲突模式
+                if (conflict_resolution_type == DROP_POINT ||                                                                                          //克服落点冲突模式
+                    (conflict_resolution_type == COLLECTION && !is_drop_conflict(pao_it->first.row, pao_it->first.col, drop_grid.row, drop_grid.col))) //克服收集物冲突模式
                 {
-                    e->second.recover_time = fire_time + 3475;
-                    roof_pao_list[success_num] = {e, drop_grid.row, drop_grid.col, fire_time};
+                    pao_it->second.recover_time = fire_time + 3475;
+                    roof_pao_list[success_num] = {pao_it, drop_grid.row, drop_grid.col, fire_time};
                     ++success_num;
                     break;
                 }
@@ -737,8 +827,8 @@ void PaoOperator::rawRoofPao(int pao_row, int pao_col, int drop_row, float drop_
     if (g_scene != 4 && g_scene != 5)
         PrintError("RawRoofPao函数只适用于RE与ME");
 
-    auto it = all_pao.find(GRID(pao_row, pao_col));
-    if (it == all_pao.end())
+    auto it = all_pao_list.find(GRID(pao_row, pao_col));
+    if (it == all_pao_list.end())
         PrintError("请检查 (%d, %d) 是否为炮");
     int fire_time = 387 - get_roof_fly_time(pao_col, drop_col) + GameClock();
     if (g_examine_level != CVZ_NO)
@@ -748,7 +838,7 @@ void PaoOperator::rawRoofPao(int pao_row, int pao_col, int drop_row, float drop_
 }
 
 //屋顶修正时间发炮 多发
-void PaoOperator::rawRoofPao(const std::vector<RAWPAO> &lst)
+void PaoOperator::rawRoofPao(const std::vector<RAW_PAO> &lst)
 {
     if (g_scene != 4 && g_scene != 5)
         PrintError("RawRoofPao函数只适用于RE与ME");
@@ -760,11 +850,15 @@ void PaoOperator::rawRoofPao(const std::vector<RAWPAO> &lst)
 
     for (const auto &rp : lst)
     {
-        if ((it = all_pao.find(GRID(rp.pao_row, rp.pao_col))) == all_pao.end())
+        if ((it = all_pao_list.find(GRID(rp.pao_row, rp.pao_col))) == all_pao_list.end())
+        {
             PrintError("请检查 (%d, %d) 是否为炮");
+        }
         fire_time = 387 - get_roof_fly_time(rp.pao_col, rp.drop_col) + GameClock();
         if (g_examine_level != CVZ_NO)
+        {
             pao_examine(it, fire_time, rp.pao_row, rp.pao_col);
+        }
         roof_pao_list[num] = {it, rp.drop_row, rp.drop_col, fire_time};
     }
 
@@ -800,35 +894,37 @@ void PaoOperator::shovel_and_plant_pao(int row, int col, int move_col, PaoIterat
     plant_pao(row, col + move_col);
 }
 
-void PaoOperator::shovelPao(int row, int col)
+void PaoOperator::shovelPao(int row, int col, bool is_forced)
 {
-    auto it = all_pao.find(GRID(row, col));
+    auto it = all_pao_list.find(GRID(row, col));
 
     //是否为炮？
-    if (it == all_pao.end())
+    if (it == all_pao_list.end())
+    {
         PrintError("请检查(%d, %d)是否为炮", row, col);
-
-    if (it->second.is_in_sequence)
+    }
+    if (it->second.is_in_sequence && !is_forced)
+    {
         PrintError("(%d, %d)被炮序限制，不允许对其进行铲除操作", row, col);
-
+    }
     //在这里不能直接释放 it 的内存，虽然炮已经不存在了，
     it->second.is_shoveled = true;
 
     Shovel(row, col);
 }
 
-void PaoOperator::fixPao(int row, int col, int move_col, int delay_time)
+void PaoOperator::fixPao(int row, int col, int move_col, int delay_time, bool is_forced)
 {
     if (move_col > 1 || move_col < -1)
         PrintError("铲种炮不允许位移量超过 1");
 
-    auto it = all_pao.find(GRID(row, col));
+    auto it = all_pao_list.find(GRID(row, col));
 
     //是否为炮？
-    if (it == all_pao.end())
+    if (it == all_pao_list.end())
         PrintError("请检查(%d, %d)是否为炮", row, col);
 
-    if (it->second.is_in_sequence)
+    if (it->second.is_in_sequence && !is_forced)
         PrintError("(%d, %d)被炮序限制，不允许对其进行铲种操作", row, col);
 
     RunningInThread(shovel_and_plant_pao, row, col, move_col, it, delay_time);
@@ -837,25 +933,28 @@ void PaoOperator::fixPao(int row, int col, int move_col, int delay_time)
 void PaoOperator::tryFixPao()
 {
     if (limit_pao_sequence)
+    {
         PrintError("由于炮序限制，tryPao系列函数不可使用！");
-
+    }
     RunningInThread([&]() {
         pvz::PlantMemory cannon;
         //记录内存中炮的状态(炮的状态为可以发射)
-        std::vector<PaoIterator> original_pao_message;
+        std::vector<PaoIterator> original_pao_message_list;
 
         //进行遍历并记录符合条件的炮
-        for (const auto pao_message : paolist)
+        for (const auto pao_message : pao_list)
         {
             cannon.setIndex(pao_message->second.index);
             if (cannon.status() == 37)
-                original_pao_message.push_back(pao_message);
+            {
+                original_pao_message_list.push_back(pao_message);
+            }
         }
 
         while (1)
         {
             Sleep(5);
-            for (const auto pao_message : original_pao_message)
+            for (const auto &pao_message : original_pao_message_list)
             {
                 cannon.setIndex(pao_message->second.index);
                 if (cannon.status() == 38)
@@ -867,4 +966,60 @@ void PaoOperator::tryFixPao()
         }
     });
 }
+
+void PaoOperator::tryRecoverPao(int row, float col)
+{
+    if (limit_pao_sequence)
+    {
+        PrintError("由于炮序限制，tryPao系列函数不可使用！");
+    }
+
+    // 寻找第一个未被铲的炮
+    auto pao_it_it = pao_list.begin();
+    while ((*pao_it_it)->second.is_shoveled)
+    {
+        ++pao_it_it;
+    }
+
+    // 寻找 cd 最小的炮
+    int now_time = GameClock();
+    auto min_time_it_it = pao_it_it;
+    do
+    {
+        if (!(*pao_it_it)->second.is_shoveled &&                                          // is_shoveled?
+            (*min_time_it_it)->second.recover_time > (*pao_it_it)->second.recover_time && // is_recoverd?
+            (conflict_resolution_type == DROP_POINT ||                                    // model_examine
+             (conflict_resolution_type == COLLECTION && !is_drop_conflict((*pao_it_it)->first.row, (*pao_it_it)->first.col, row, col))))
+        {
+            min_time_it_it = pao_it_it;
+        }
+        ++pao_it_it;
+    } while (pao_it_it != pao_list.end());
+
+    while ((*min_time_it_it)->second.recover_time - 1 > GameClock())
+    {
+        Sleep(1);
+    }
+
+    // 确保发炮
+    PlantMemory cannon_memory((*min_time_it_it)->second.index);
+    while (cannon_memory.status() != 37)
+        ;
+
+    base_fire_pao(*min_time_it_it, GameClock(), row, col);
+}
+
+void PaoOperator::tryRecoverPao(const std::vector<PAO> &lst)
+{
+    if (limit_pao_sequence)
+    {
+        PrintError("由于炮序限制，tryPao系列函数不可使用！");
+    }
+
+    for (const auto &grid : lst)
+    {
+        tryRecoverPao(grid.row, grid.col);
+    }
+}
+
 } // namespace pvz

@@ -16,9 +16,10 @@ int main()
     SelectCards({{"hbg"}, {"Mhbg"}, {"kfd"}, {"hmg"}, {"wg"}, {"ytzd"}, {"ngt"}, {"xpg"}, {"ygg"}, {"dxg"}});
 
     ice_filler.start({{1, 1}, {5, 1}, {3, 7}});
-    nut_fixer.start(30, {{1, 1}, {2, 1}, {4, 1}, {5, 1}});
+    nut_fixer.start(pvz::NGT_30, {{1, 1}, {2, 1}, {4, 1}, {5, 1}});
 
-    for (wave = 1; wave < 21; wave++)
+    for (wave = 1; wave < 21; ++wave)
+    {
         switch (wave) // 这里也可以用 if  else if  else 结构
         {
         case 1:
@@ -51,7 +52,7 @@ int main()
         case 14:
         case 17:
             Prejudge(400, wave);
-            if (wave == 3 && pvz::ExamineZombieExist(12, 3))
+            if (wave == 3 && pvz::ExamineZombieExist(pvz::BC_12, 3))
                 Card("wg", 3, 8);
 
             Until(1500 - 373 - 200);
@@ -87,7 +88,7 @@ int main()
             Pao({{2, 8.5}, {4, 8.5}});
             break;
         }
-
+    }
     return 0;
 }
 
@@ -99,7 +100,9 @@ void WaveEnding()
         RecoverPao({{2, 9}, {4, 9}});
     }
     else
+    {
         RecoverPao({{2, 8}, {4, 8}});
+    }
 
     // 等待炮生效
     Delay(373 + 10);
@@ -111,12 +114,11 @@ void WaveEnding()
 
     int giant_row = 0;
 
-    // 统计每行的红眼巨人的数量
     for (int i = 0; i < zombie_count_max; i++)
     {
         giant.setIndex(i);
         // 如果巨人不是残血
-        if (giant.type() == 32 && giant.hp() > 600)
+        if (giant.type() == pvz::HY_32 && giant.hp() > 600)
         {
             giant_row = giant.row() + 1;
             break;
@@ -182,5 +184,6 @@ void WaveEnding()
     for (int row = 1; row < 6; row++)
         for (int col = 7; col < 10; col++)
             Shovel(row, col);
-    Card("wg", giant_row, 7);
+    Card("hmg", 3, 9);
+    Card("kfd", 3, 9);
 }

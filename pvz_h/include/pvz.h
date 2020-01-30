@@ -3,8 +3,8 @@
  * @Author: Chu Wenlong
  * @FilePath: \CppVsZombies\pvz_h\include\pvz.h
  * @Date: 2019-08-31 23:04:00
- * @LastEditTime : 2019-12-31 16:24:54
- * @Description: PvZ Script Framework C++ vs. Zombies
+ * @LastEditTime : 2020-01-27 15:45:31
+ * @Description: PvZ TAS Framework C++ vs. Zombies
  *               This framework references Python vs. Zombies
  *               @lmintlcx https://pvz.lmintlcx.com/scripts/pvz.py/
  */
@@ -14,27 +14,30 @@
 
 #include "libpvz.h"
 
-using pvz::Card;            //用卡
-using pvz::Delay;           //时间延迟
-using pvz::dian_cai_placer; //放置垫材对象
-using pvz::FixNut;          //修补坚果类
-using pvz::Ice3;            //冰三
-using pvz::ice_filler;      //存冰对象
-using pvz::item_collector;  //自动收集
-using pvz::KeyConnect;      //键盘指定操作
-using pvz::KeyDown;         //检测键盘是否按下
-using pvz::nut_fixer;       //修补坚果对象
-using pvz::nv_pu_mi_ji;     //女仆秘籍对象
-using pvz::OpenExamine;     //开启检查
-using pvz::PaoOperator;     //炮操作类
-using pvz::Prejudge;        //时间预判
-using pvz::RunningInThread; //创建子线程
-using pvz::SelectCards;     //选卡
-using pvz::Shovel;          //铲除
-using pvz::Until;           //等待时间到
-using pvz::wave;            //波数
-using pvz::wave_in;         //波数判定
-using pvz::wave_not_in;     //波数判定
+using pvz::Card;
+using pvz::Delay;
+using pvz::dian_cai_placer;
+using pvz::FixPlant;
+using pvz::RecoverCard;
+using FixNut = FixPlant;
+using pvz::Ice3;
+using pvz::ice_filler;
+using pvz::item_collector;
+using pvz::KeyConnect;
+using pvz::KeyDown;
+using pvz::nut_fixer;
+using pvz::OpenExamine;
+using pvz::PaoOperator;
+using pvz::Prejudge;
+using pvz::RunningInThread;
+using pvz::SelectCards;
+using pvz::Shovel;
+using pvz::StartMaidCheats;
+using pvz::StopMaidCheats;
+using pvz::Until;
+using pvz::wave;
+using pvz::wave_in;
+using pvz::wave_not_in;
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //以下的宏是为了兼容 CvZ 之前的版本，现已不推荐使用
@@ -60,9 +63,6 @@ using pvz::wave_not_in;     //波数判定
 #define StartAutoFillIceThread pvz::ice_filler.start
 #define StopAutoFillIceThread pvz::ice_filler.stop
 #define Coffee pvz::ice_filler.coffee
-
-#define StartPreventDancerAdvance pvz::nv_pu_mi_ji.start
-#define StopPreventDancerAdvance pvz::nv_pu_mi_ji.stop
 
 #define StartAutoSetDianCaiThread pvz::dian_cai_placer.start
 #define StopAutoSetDianCaiThread pvz::dian_cai_placer.stop

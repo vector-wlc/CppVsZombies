@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_auto_thread.cpp
  * @Date: 2019-10-10 23:46:10
- * @LastEditTime : 2019-12-31 23:09:18
+ * @LastEditTime : 2020-01-30 12:50:00
  * @Description: 自动操作类的实现
  */
 
@@ -13,43 +13,25 @@
 
 namespace pvz
 {
-void BaseBaseAutoThread::error_messages()
+/////////////////////////////////////////////////
+//    BaseAutoThread
+/////////////////////////////////////////////////
+
+void BaseAutoThread::error_messages()
 {
 	PrintError("自动操作类不允许一个对象创建多个线程");
 }
 
-BaseAutoThread::BaseAutoThread() : BaseBaseAutoThread() {}
-
-void BaseAutoThread::base_reset_list(const std::vector<GRID> &lst)
-{
-	grid_lst.clear();
-	if (g_examine_level == CVZ_NO)
-		grid_lst = lst;
-	else
-	{
-		for (const auto &e : lst)
-		{
-			//如果为池塘场景而且在水路
-			if ((g_scene == 2 || g_scene == 3) &&
-				(e.row == 3 || e.row == 4))
-				//如果没有选择荷叶卡片且需要荷叶
-				if (leaf_seed_index == -1 && GetPlantIndex(e.row, e.col, 16) == -1 && GetPlantIndex(e.row, e.col, 43) == -1)
-					PrintError("您没有选择荷叶卡片，(%d, %d)需要荷叶", e.row, e.col);
-			grid_lst.push_back(e);
-		}
-	}
-}
-
-FillIce::FillIce() : BaseAutoThread() {}
+/////////////////////////////////////////////////
+//    FillIce
+/////////////////////////////////////////////////
 
 void FillIce::start(const std::vector<GRID> &lst)
 {
-	if (stop_)
+	if (is_stoped)
 	{
-		stop_ = false;
-		pause_ = false;
-		//获得荷叶的对象序列
-		leaf_seed_index = GetSeedIndex(16);
+		is_stoped = false;
+		is_paused = false;
 		resetFillList(lst);
 		RunningInThread(&FillIce::use_ice, this);
 	}
@@ -61,70 +43,88 @@ void FillIce::start(const std::vector<GRID> &lst)
 
 void FillIce::use_ice()
 {
-	std::vector<int> ice_seed_index;
-
 	WaitGameStart();
+	std::vector<ICE_SEED_MSG> ice_seed_msg_vec;
+	ICE_SEED_MSG ice_seed_msg;
+	SeedMemory ice_seed_memory;
+	int now_time = GameClock();
 
-	int hbg = GetSeedIndex(14);
-	int Mhbg = GetSeedIndex(14, true);
-	//得到咖啡豆卡片对象序列
-	coffee_index = GetSeedIndex(35);
-
-	//获得寒冰菇卡片对象序列
-	if (hbg != -1)
-		ice_seed_index.push_back(hbg);
-	//获得寒冰菇模仿者卡槽对象序列
-	if (Mhbg != -1)
-		ice_seed_index.push_back(Mhbg);
-
-	SeedMemory ice_seed;
-	SeedMemory leaf_seed(leaf_seed_index);
-
-	while (!stop_)
+	// 初始化
+	for (int i = 0; i < 2; ++i)
 	{
-		Sleep(interval_);
-
-		if (GamePaused() || GameUi() != 3)
-			continue;
-
-		GetPlantIndexs(grid_lst, 14, ice_plant_indexs);
-
-		if (pause_)
-			continue;
-
-		for (int i = 0; i < ice_seed_index.size(); i++)
+		if (i == 0)
 		{
-			ice_seed.setIndex(ice_seed_index[i]);
-			//如果卡片不能使用
-			if (!ice_seed.isUsable())
-				continue;
+			ice_seed_msg.index = GetSeedIndex(HBG_14);
+		}
+		else
+		{
+			ice_seed_msg.index = GetSeedIndex(HBG_14, true);
+		}
 
-			for (int j = 0; j < grid_lst.size(); j++)
+		if (ice_seed_msg.index != -1)
+		{
+			ice_seed_memory.setIndex(ice_seed_msg.index);
+			int ice_seed_cd = ice_seed_memory.CD();
+			if (ice_seed_cd == 0)
 			{
-				//如果此存冰坐标没有植物，使用寒冰菇
-				if (ice_plant_indexs[j] == -1)
+				ice_seed_msg.recover_time = now_time;
+			}
+			else
+			{
+				ice_seed_msg.recover_time = now_time + ice_seed_memory.initialCD() - ice_seed_cd;
+			}
+			ice_seed_msg_vec.push_back(ice_seed_msg);
+		}
+	}
+
+	coffee_seed_index = GetSeedIndex(KFD_35);
+	std::vector<int> ice_plant_index_vec;
+	decltype(ice_seed_msg_vec.begin()) ice_seed_msg_it;
+	decltype(ice_plant_index_vec.begin()) ice_plant_index_it;
+	decltype(grid_lst.begin()) grid_it;
+	bool is_get_indexs = false;
+
+	while (!is_stoped)
+	{
+		Sleep(time_interval);
+		if (GamePaused() || GameUi() != 3 || is_paused)
+		{
+			continue;
+		}
+
+		now_time = GameClock();
+
+		is_get_indexs = false;
+		grid_it = grid_lst.begin();
+		for (ice_seed_msg_it = ice_seed_msg_vec.begin();
+			 ice_seed_msg_it != ice_seed_msg_vec.end();
+			 ++ice_seed_msg_it)
+		{
+			if (ice_seed_msg_it->recover_time - 1 > now_time) // 精准种植
+			{
+				continue;
+			}
+
+			if (!is_get_indexs)
+			{
+				GetPlantIndexs(grid_lst, HBG_14, ice_plant_index_vec);
+				ice_plant_index_it = ice_plant_index_vec.begin();
+				is_get_indexs = true;
+			}
+
+			for (; ice_plant_index_it != ice_plant_index_vec.end();
+				 ++grid_it, ++ice_plant_index_it)
+			{
+				if ((*ice_plant_index_it) == -1)
 				{
-					//如果为池塘场景而且在水路
-					if ((g_scene == 2 || g_scene == 3) &&
-						(grid_lst[j].row == 3 || grid_lst[j].row == 4))
-					{
-						if (GetPlantIndex(grid_lst[j].row, grid_lst[j].col, 16) == -1)
-						{
-							if (!leaf_seed.isUsable())
-								continue;
-							Card(leaf_seed_index + 1, grid_lst[j].row, grid_lst[j].col);
-						}
-					}
-					//由于花盆比较特殊，在此不考虑天台自动补花盆情况
-
-					Card(ice_seed_index[i] + 1, grid_lst[j].row, grid_lst[j].col);
-
-					//更新植物对象序列
-					int next_plant_index = PlantMemory::nextIndex();
-					while (next_plant_index == PlantMemory::nextIndex())
-						Sleep(1);
-					ice_plant_indexs[j] = next_plant_index;
-
+					// 保证种上去
+					ice_seed_memory.setIndex(ice_seed_msg_it->index);
+					while (!ice_seed_memory.isUsable())
+						;
+					Card(ice_seed_msg_it->index + 1, grid_it->row, grid_it->col);
+					ice_seed_msg_it->recover_time = GameClock() + 5000;
+					++grid_it;
+					++ice_plant_index_it;
 					break;
 				}
 			}
@@ -132,85 +132,137 @@ void FillIce::use_ice()
 	}
 }
 
-//使用咖啡豆，必须配合自动存冰函数使用
-void FillIce::coffee()
+void FillIce::resetFillList(const std::vector<GRID> &lst)
 {
-	if (coffee_index == -1)
-		PrintError("您没有选择咖啡豆卡片!");
-
-	for (int i = ice_plant_indexs.size() - 1; i >= 0; --i)
-	{
-		if (ice_plant_indexs[i] >= 0)
-		{
-			g_mu.lock();
-			RightClick(1, 1);
-			LeftClick(70, 50 + 50 * (coffee_index + 1));
-			SceneClick(grid_lst[i].row, grid_lst[i].col);
-			RightClick(1, 1);
-
-			if (g_examine_level == CVZ_INFO)
-				std::printf("	Use coffee\n\n");
-			g_mu.unlock();
-
-			return;
-		}
-	}
-
-	PrintError("您没有可用的存冰了!");
+	g_mu.lock();
+	grid_lst = lst;
+	g_mu.unlock();
 }
 
-FixNut::FixNut() : BaseAutoThread() {}
-
-void FixNut::start(int nut_type, const std::vector<GRID> &lst, int fix_hp)
+//使用咖啡豆，必须配合自动存冰函数使用
+void FillIce::coffee() const
 {
-	if (stop_)
+	if (coffee_seed_index == -1)
 	{
-		pause_ = false;
-		stop_ = false;
-		if (nut_type != 3 && nut_type != 23 && nut_type != 30)
-			PrintError("维修坚果类只能用于维修坚果类植物");
-		//得到对应类型的坚果卡片对象序列
-		nut_seed_index = GetSeedIndex(nut_type);
-		//获得荷叶卡片的对象序列
-		leaf_seed_index = GetSeedIndex(16);
-		nut_type_ = nut_type;
+		PrintError("您没有选择咖啡豆卡片!");
+	}
 
-		if (nut_seed_index == -1)
-			PrintError("您没有选择对应的坚果卡片");
+	g_mu.lock();
+	RightClick(1, 1);
+	LeftClick(70, 50 + 50 * (coffee_seed_index + 1));
+	auto grid_it = grid_lst.end();
+	do
+	{
+		--grid_it;
+		SceneClick(grid_it->row, grid_it->col);
+	} while (grid_it != grid_lst.begin());
+	RightClick(1, 1);
+	g_mu.unlock();
+}
+
+/////////////////////////////////////////////////
+//    FillPlant
+/////////////////////////////////////////////////
+
+void FixPlant::autoGetFixList()
+{
+	PlantMemory plant;
+
+	int plant_cnt_max = PlantMemory::countMax();
+	GRID grid;
+
+	for (int index = 0; index < plant_cnt_max; ++index)
+	{
+		plant.setIndex(index);
+		if (!plant.isCrushed() && !plant.isDisappeared() && plant.type() == plant_type)
+		{
+			grid.col = plant.col() + 1;
+			grid.row = plant.row() + 1;
+			grid_lst.push_back(grid);
+		}
+	}
+}
+
+bool FixPlant::use_seed(int seed_index, int row, float col, bool is_need_shovel)
+{
+	if (is_use_coffee)
+	{
+		if (coffee_seed_index == -1)
+		{
+			return false;
+		}
+		SeedMemory coffee_seed(coffee_seed_index);
+		if (!coffee_seed.isUsable())
+		{
+			return false;
+		}
+	}
+	if (is_need_shovel)
+	{
+		if (plant_type == NGT_30)
+		{
+			Shovel(row, col, true);
+		}
+		else
+		{
+			Shovel(row, col);
+		}
+	}
+	Card(seed_index + 1, row, col);
+	if (is_use_coffee)
+	{
+		Card(coffee_seed_index + 1, row, col);
+	}
+	return true;
+}
+
+void FixPlant::get_seed_list()
+{
+	int seed_index;
+	seed_index = GetSeedIndex(plant_type);
+	if (-1 != seed_index)
+	{
+		seed_index_vec.push_back(seed_index);
+	}
+	seed_index = GetSeedIndex(plant_type, true);
+	if (-1 != seed_index)
+	{
+		seed_index_vec.push_back(seed_index);
+	}
+	leaf_seed_index = GetSeedIndex(HY_16);
+	coffee_seed_index = GetSeedIndex(KFD_35);
+}
+
+void FixPlant::resetFixHp(int _fix_hp)
+{
+	fix_hp = _fix_hp;
+}
+
+void FixPlant::start(int _plant_type, const std::vector<GRID> &lst, int _fix_hp)
+{
+	if (is_stoped)
+	{
+		is_paused = false;
+		is_stoped = false;
+		if (_plant_type >= JQSS_40)
+		{
+			PrintError("修补植物类仅支持绿卡");
+		}
+		plant_type = _plant_type;
+		fix_hp = _fix_hp;
+		get_seed_list();
 
 		//如果用户没有给出列表信息
 		if (lst.size() == 0)
 		{
-			PlantMemory plant;
-			int PCM = plant.countMax();
-			GRID fix_grid;
-			for (int i = 0; i < PCM; i++)
-			{
-				plant.setIndex(i);
-				if (!plant.isCrushed() && !plant.isDisappeared() &&
-					plant.type() == nut_type_)
-				{
-					fix_grid.row = plant.row() + 1;
-					fix_grid.col = plant.col() + 1;
-
-					if (g_examine_level != CVZ_NO)
-					{
-						//如果为池塘场景而且在水路
-						if ((g_scene == 2 || g_scene == 3) &&
-							(fix_grid.row == 3 || fix_grid.row == 4))
-							//如果没有选择荷叶卡片且需要荷叶
-							if (leaf_seed_index == -1 && GetPlantIndex(fix_grid.row, fix_grid.col, 16) == -1 && GetPlantIndex(fix_grid.row, fix_grid.col, 43) == -1)
-								PrintError("您没有选择荷叶卡片，(%d, %d)需要荷叶", fix_grid.row, fix_grid.col);
-					}
-					grid_lst.push_back(fix_grid);
-				}
-			}
+			autoGetFixList();
 		}
 		else
-			base_reset_list(lst);
+		{
+			grid_lst = lst;
+		}
 
-		resetFixHp(fix_hp);
-		RunningInThread(&FixNut::update_nut, this);
+		RunningInThread(&FixPlant::update_plant, this);
 	}
 	else
 	{
@@ -218,145 +270,112 @@ void FixNut::start(int nut_type, const std::vector<GRID> &lst, int fix_hp)
 	}
 }
 
-void FixNut::resetFixList(const std::vector<GRID> &lst) { base_reset_list(lst); }
-
-void FixNut::resetFixHp(int fix_hp)
-{
-	if (nut_type_ == 23)
-		fix_hp_ = fix_hp > 5332 ? 5332 : fix_hp;
-	else
-		fix_hp_ = fix_hp > 2665 ? 2665 : fix_hp;
-}
-
-//更新坚果
-void FixNut::update_nut()
+void FixPlant::update_plant()
 {
 	//等待游戏开始
 	WaitGameStart();
 
-	SeedMemory nut_seed(nut_seed_index);
-	SeedMemory leaf_seed(leaf_seed_index);
-
+	SeedMemory seed_memory;
+	SeedMemory leaf_seed_memory(leaf_seed_index);
 	PlantMemory plant;
-	//记录要使用坚果的格子
-	GRID need_nut_grid;
-	//记录坚果的最小生命值
-	int min_nut_hp;
+	std::vector<int> plant_index_vec;
+	GRID need_plant_grid; //记录要使用植物的格子
+	int min_hp;			  //记录要使用植物的格子
+	bool is_seed_used;	//种子是否被使用
+	decltype(seed_index_vec.begin()) usable_seed_index_it;
+	decltype(plant_index_vec.begin()) plant_index_it;
+	decltype(grid_lst.begin()) grid_it;
 
-	while (!stop_)
+	while (!is_stoped)
 	{
-		Sleep(interval_);
-		if (pause_ || GamePaused() || GameUi() != 3)
-			continue;
-		//格子信息置零
-		need_nut_grid.row = need_nut_grid.col = 0;
-		//最小生命值重置
-		min_nut_hp = fix_hp_;
-		//等待卡片回复
-		if (!nut_seed.isUsable())
+		Sleep(time_interval);
+		if (is_paused || GamePaused() || GameUi() != 3)
 			continue;
 
-		GetPlantIndexs(grid_lst, nut_type_, nut_plant_indexs);
-
-		int i = -1;
-		for (const auto &e : grid_lst)
+		usable_seed_index_it = seed_index_vec.begin();
+		do
 		{
-			int nut_index = nut_plant_indexs[++i];
+			seed_memory.setIndex(*usable_seed_index_it);
+			if (seed_memory.isUsable())
+			{
+				break;
+			}
+			++usable_seed_index_it;
+		} while (usable_seed_index_it != seed_index_vec.end());
 
-			//如果此处存在除坚果类植物的植物
-			if (nut_index == -2)
+		// 没找到可用的卡片
+		if (usable_seed_index_it == seed_index_vec.end())
+			continue;
+
+		GetPlantIndexs(grid_lst, plant_type, plant_index_vec);
+
+		is_seed_used = false;
+		need_plant_grid.row = need_plant_grid.col = 0; //格子信息置零
+		min_hp = fix_hp;							   //最小生命值重置
+
+		for (grid_it = grid_lst.begin(), plant_index_it = plant_index_vec.begin();
+			 grid_it != grid_lst.end();
+			 ++grid_it, ++plant_index_it)
+		{
+			//如果此处存在除植物类植物的植物
+			if (*plant_index_it == -2)
+			{
 				continue;
+			}
 
-			//如果此处不存在坚果植物
-			if (nut_index == -1)
+			if (*plant_index_it == -1)
 			{
 				//如果为池塘场景而且在水路
 				if ((g_scene == 2 || g_scene == 3) &&
-					(e.row == 3 || e.row == 4))
-					//如果不存在荷叶
-					if (GetPlantIndex(e.row, e.col, 16) == -1)
+					(grid_it->row == 3 || grid_it->row == 4))
+				{ //如果不存在荷叶
+					if (GetPlantIndex(grid_it->row, grid_it->col, 16) == -1)
 					{
 						//如果荷叶卡片没有恢复
-						if (leaf_seed_index == -1 || !leaf_seed.isUsable())
+						if (leaf_seed_index == -1 || !leaf_seed_memory.isUsable())
 							continue;
 
-						Card(leaf_seed_index + 1, e.row, e.col);
+						Card(leaf_seed_index + 1, grid_it->row, grid_it->col);
 					}
-				//种植坚果
-				Card(nut_seed_index + 1, e.row, e.col);
-				//延迟一定时间使得内存中的信息得以变化
-				Sleep(10);
+				}
+				is_seed_used = use_seed((*usable_seed_index_it), grid_it->row, grid_it->col, false);
 				break;
 			}
-			else //如果此处存在坚果类植物
+			else
 			{
-				plant.setIndex(nut_index);
-				int nut_hp = plant.hp();
-				//如果当前生命值低于最小生命值，记录下来此坚果的信息
-				if (nut_hp < min_nut_hp)
+				plant.setIndex(*plant_index_it);
+				int plant_hp = plant.hp();
+				//如果当前生命值低于最小生命值，记录下来此植物的信息
+				if (plant_hp < min_hp)
 				{
-					min_nut_hp = nut_hp;
-					need_nut_grid.row = e.row;
-					need_nut_grid.col = e.col;
+					min_hp = plant_hp;
+					need_plant_grid.row = grid_it->row;
+					need_plant_grid.col = grid_it->col;
 				}
 			}
 		}
 
-		//如果有需要修补的坚果且坚果卡片已恢复则进行种植
-		if (need_nut_grid.row && nut_seed.isUsable())
-			Card(nut_seed_index + 1, need_nut_grid.row, need_nut_grid.col);
+		//如果有需要修补的植物且植物卡片能用则进行种植
+		if (need_plant_grid.row && !is_seed_used)
+		{
+			//种植植物
+			use_seed((*usable_seed_index_it), need_plant_grid.row, need_plant_grid.col, true);
+		}
 	}
 }
 
-NvPuMiJi::NvPuMiJi() : BaseBaseAutoThread() {}
+/////////////////////////////////////////////////
+//    PlaceDianCai
+/////////////////////////////////////////////////
 
-void NvPuMiJi::stop_dancer_advance() const
+PlaceDianCai::PlaceDianCai() : BaseAutoThread()
 {
-	WaitGameStart();
-
-	//启动女仆秘籍线程
-	while (!stop_)
-	{
-		if (pause_ || GameUi() != 3)
-			continue;
-		//暂停判定条件
-		while ((((DancerClock() + 10) % (20 * 23)) / 20) > 11)
-			Sleep(1);
-		//模拟敲击空格
-		g_mu.lock();
-		PressSpace();
-		g_mu.unlock();
-		Sleep(50);
-		while (((DancerClock() % (20 * 23)) / 20) <= 11)
-			Sleep(1);
-		g_mu.lock();
-		PressSpace();
-		g_mu.unlock();
-	}
-}
-
-void NvPuMiJi::start()
-{
-	if (stop_)
-	{
-		pause_ = false;
-		stop_ = false;
-		RunningInThread(&NvPuMiJi::stop_dancer_advance, this);
-	}
-	else
-	{
-		error_messages();
-	}
-}
-
-PlaceDianCai::PlaceDianCai() : BaseBaseAutoThread()
-{
-	place_message_ = {{0, 1000.0, 9, false},
-					  {0, 1000.0, 9, false},
-					  {0, 1000.0, 9, false},
-					  {0, 1000.0, 9, false},
-					  {0, 1000.0, 9, false},
-					  {0, 1000.0, 9, false}};
+	place_message_list = {{0, 1000.0, 9, false},
+						  {0, 1000.0, 9, false},
+						  {0, 1000.0, 9, false},
+						  {0, 1000.0, 9, false},
+						  {0, 1000.0, 9, false},
+						  {0, 1000.0, 9, false}};
 }
 
 void PlaceDianCai::resetSetDianCaiList(const std::vector<GRID> &lst)
@@ -367,22 +386,22 @@ void PlaceDianCai::resetSetDianCaiList(const std::vector<GRID> &lst)
 		return;
 	}
 
-	for (auto &message : place_message_)
+	for (auto &message : place_message_list)
 	{
 		message.is_plantble = false;
 	}
 
 	for (const auto &grid : lst)
 	{
-		place_message_[grid.row - 1].is_plantble = true;
-		place_message_[grid.row - 1].place_max_col = grid.col;
+		place_message_list[grid.row - 1].is_plantble = true;
+		place_message_list[grid.row - 1].place_max_col = grid.col;
 	}
 }
 
 void PlaceDianCai::resetSetDianCaiList()
 {
 	// 不填参数就是初始化成所有行都要种
-	for (auto &message : place_message_)
+	for (auto &message : place_message_list)
 	{
 		message.is_plantble = true;
 		message.place_max_col = 9;
@@ -392,7 +411,7 @@ void PlaceDianCai::resetSetDianCaiList()
 void PlaceDianCai::get_min_absci_zombie()
 {
 	//重置最小的僵尸坐标
-	for (auto &message : place_message_)
+	for (auto &message : place_message_list)
 		message.zombie_min_abscissa = 900.0;
 
 	int zombies_count_max = zombie.countMax();
@@ -405,7 +424,8 @@ void PlaceDianCai::get_min_absci_zombie()
 		{
 			//记录僵尸类型
 			int Ztype = zombie.type();
-			for (const auto &e : lst_zombie_)
+			for (const auto &e : prevent_zombie_type_list)
+			{
 				if (Ztype == e)
 				{
 					int Zrow = zombie.row();
@@ -414,10 +434,11 @@ void PlaceDianCai::get_min_absci_zombie()
 					if (Ztype == 7)
 						Zabsci += 20;
 					//如果现在僵尸的坐标值小于已记录的坐标值
-					if (Zabsci < place_message_[Zrow].zombie_min_abscissa)
-						place_message_[Zrow].zombie_min_abscissa = Zabsci;
+					if (Zabsci < place_message_list[Zrow].zombie_min_abscissa)
+						place_message_list[Zrow].zombie_min_abscissa = Zabsci;
 					break;
 				}
+			}
 		}
 	}
 }
@@ -428,7 +449,7 @@ void PlaceDianCai::resetProtectedPlantList(const std::vector<GRID> &lst)
 	if (lst.size() == 0)
 	{
 		//初始化
-		for (auto &message : place_message_)
+		for (auto &message : place_message_list)
 		{
 			message.plant_max_abscissa = 0;
 		}
@@ -444,11 +465,11 @@ void PlaceDianCai::resetProtectedPlantList(const std::vector<GRID> &lst)
 				int Pabsci = plant.abscissa();
 				int Ptype = plant.type();
 				//如果不是炮
-				if (place_message_[Prow].plant_max_abscissa < Pabsci && Ptype != 47)
-					place_message_[Prow].plant_max_abscissa = Pabsci;
+				if (place_message_list[Prow].plant_max_abscissa < Pabsci && Ptype != 47)
+					place_message_list[Prow].plant_max_abscissa = Pabsci;
 				//如果是炮
-				if (place_message_[Prow].plant_max_abscissa < (Pabsci + 80) && Ptype == 47)
-					place_message_[Prow].plant_max_abscissa = Pabsci + 80;
+				if (place_message_list[Prow].plant_max_abscissa < (Pabsci + 80) && Ptype == 47)
+					place_message_list[Prow].plant_max_abscissa = Pabsci + 80;
 			}
 		}
 	}
@@ -458,7 +479,7 @@ void PlaceDianCai::resetProtectedPlantList(const std::vector<GRID> &lst)
 		// 遍历参数列表
 		for (const auto &e : lst)
 		{
-			place_message_[e.row - 1].plant_max_abscissa = int((e.col - 0.5) * 80);
+			place_message_list[e.row - 1].plant_max_abscissa = int((e.col - 0.5) * 80);
 		}
 	}
 }
@@ -470,7 +491,7 @@ GRID PlaceDianCai::need_diancai_grid() const
 	float now_distance = 0;
 	int row = 1;
 	int mindistance_row = 0;
-	for (const auto &message : place_message_)
+	for (const auto &message : place_message_list)
 	{
 		if (message.is_plantble)
 		{
@@ -489,11 +510,13 @@ GRID PlaceDianCai::need_diancai_grid() const
 	if (mindistance_row != -1)
 	{
 		diancai.row = mindistance_row;
-		int zombie_col = int((place_message_[mindistance_row - 1].zombie_min_abscissa + 70) / 80);
-		diancai.col = zombie_col < place_message_[mindistance_row - 1].place_max_col ? zombie_col : place_message_[mindistance_row - 1].place_max_col;
+		int zombie_col = int((place_message_list[mindistance_row - 1].zombie_min_abscissa + 70) / 80);
+		diancai.col = zombie_col < place_message_list[mindistance_row - 1].place_max_col ? zombie_col : place_message_list[mindistance_row - 1].place_max_col;
 	}
 	else
+	{
 		diancai.col = diancai.row = -1; //不存在时将两个值赋为-1
+	}
 	return diancai;
 }
 
@@ -504,17 +527,17 @@ void PlaceDianCai::auto_plant_diancai()
 	WaitGameStart();
 
 	//开启自动种植垫材
-	stop_ = false;
+	is_stoped = false;
 
 	SeedMemory seed;
 
-	while (!stop_)
+	while (!is_stoped)
 	{
-		Sleep(interval_);
-		if (pause_ || GamePaused() || GameUi() != 3)
+		Sleep(time_interval);
+		if (is_paused || GamePaused() || GameUi() != 3)
 			continue;
 		//遍历垫材植物列表
-		for (const auto &e : lst_plant_)
+		for (const auto &e : diancai_plant_type_list)
 		{
 			seed.setIndex(e - 1);
 			if (seed.isUsable())
@@ -529,12 +552,12 @@ void PlaceDianCai::auto_plant_diancai()
 				{
 					//如果需要种植垫材的格子无法种植
 					while (!IsPlantable(diancai.row, diancai.col))
-						diancai.col--;
+						--diancai.col;
 					//要种垫材的地方如果有植物(垫材)
 					while (GetPlantIndex(diancai.row, diancai.col) != -1 || GetPlantIndex(diancai.row, diancai.col, 33) != -1)
-						diancai.col--;
+						--diancai.col;
 					//如果种植垫材的格子为需要保护的植物或有巨人举锤和小丑爆炸等
-					if ((int((diancai.col - 0.5) * 80) <= place_message_[diancai.row - 1].plant_max_abscissa) ||
+					if ((int((diancai.col - 0.5) * 80) <= place_message_list[diancai.row - 1].plant_max_abscissa) ||
 						IsHammering(diancai.row, diancai.col) ||
 						IsExplode(diancai.row, diancai.col))
 						break;
@@ -552,12 +575,12 @@ void PlaceDianCai::start(const std::vector<int> &lst_plant,
 						 const std::vector<GRID> &lst_grid,
 						 const std::vector<int> &lst_zombie)
 {
-	if (stop_)
+	if (is_stoped)
 	{
 		plant.getOffset();
 		zombie.getOffset();
-		pause_ = false;
-		stop_ = false;
+		is_paused = false;
+		is_stoped = false;
 		resetSetDianCaiList(lst_grid);
 		resetDianCaiSeedList(lst_plant);
 		//得到每行最大的植物横坐标
@@ -571,7 +594,11 @@ void PlaceDianCai::start(const std::vector<int> &lst_plant,
 	}
 }
 
-CollectItem::CollectItem() : BaseBaseAutoThread() {}
+/////////////////////////////////////////////////
+//    CollectItem
+/////////////////////////////////////////////////
+
+CollectItem::CollectItem() : BaseAutoThread() {}
 
 void CollectItem::start_auto_collect() const
 {
@@ -579,10 +606,12 @@ void CollectItem::start_auto_collect() const
 
 	ItemMemory item;
 
-	while (!stop_)
+	uintptr_t mouse_attribution_offset = ReadMemory<uintptr_t>(g_mainobject + 0x138); // 鼠标属性偏移
+
+	while (!is_stoped)
 	{
-		Sleep(interval_);
-		if (pause_ || GamePaused() || GameUi() != 3)
+		Sleep(time_interval);
+		if (is_paused || GamePaused() || GameUi() != 3)
 			continue;
 		int item_count_max = item.countMax();
 		if (!item.count())
@@ -595,12 +624,12 @@ void CollectItem::start_auto_collect() const
 		{
 			item.setIndex(i);
 			if (!item.isDisappeared() && !item.isCollected())
-				uncollect_item_count++;
+				++uncollect_item_count;
 		}
 
 		if (!uncollect_item_count)
 		{
-			Sleep(interval_);
+			Sleep(time_interval);
 			continue;
 		}
 
@@ -608,8 +637,9 @@ void CollectItem::start_auto_collect() const
 		{
 			if (GameUi() != 3)
 				break;
-			while (GamePaused() || MouseInGame())
-				Sleep(interval_);
+			// 游戏暂停或鼠标上面有物品
+			while (GamePaused() || ReadMemory<int>(mouse_attribution_offset + 0x30) != 0)
+				Sleep(time_interval);
 			item.setIndex(i);
 			if (!item.isDisappeared() && !item.isCollected())
 			{
@@ -624,7 +654,7 @@ void CollectItem::start_auto_collect() const
 					LeftClick(y, x);
 					RightClick(1, 1);
 					g_mu.unlock();
-					Sleep(interval_);
+					Sleep(time_interval);
 				}
 			}
 		}
@@ -633,10 +663,10 @@ void CollectItem::start_auto_collect() const
 
 void CollectItem::start()
 {
-	if (stop_)
+	if (is_stoped)
 	{
-		pause_ = false;
-		stop_ = false;
+		is_paused = false;
+		is_stoped = false;
 		RunningInThread(&CollectItem::start_auto_collect, this);
 	}
 	else
