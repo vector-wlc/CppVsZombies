@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_time.cpp
  * @Date: 2019-10-10 23:11:52
- * @LastEditTime : 2020-01-02 22:07:10
+ * @LastEditTime : 2020-01-31 14:14:51
  * @Description: 时间函数的实现
  */
 
@@ -19,13 +19,13 @@ void Prejudge(int t, int w)
 {
     if (g_examine_level == CVZ_IGNORE_TIME)
         return;
+    wave = w;
     if (g_examine_level == CVZ_INFO)
     {
         g_mu.lock();
         std::printf("  ################## wave:%d ##################\n\n", wave);
         g_mu.unlock();
     }
-    wave = w;
     int base_time;
     if (wave == 1)
         base_time = 550;
@@ -87,7 +87,7 @@ void Delay(int time)
 {
     if (g_examine_level == CVZ_IGNORE_TIME)
         return;
-        
+
     if (time >= 0)
     {
         //获取当前时钟
@@ -149,7 +149,7 @@ void Ice3(int delay_time)
         {
             ice.setIndex(ice_index);
             // 寻找目标寒冰菇
-            if (ice.type() == 14 && ice.status() == 2)
+            if (ice.type() == 14 && ice.state() == 2)
             {
                 break;
             }

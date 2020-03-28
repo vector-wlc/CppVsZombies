@@ -3,13 +3,15 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_auto_thread.cpp
  * @Date: 2019-10-10 23:46:10
- * @LastEditTime : 2020-01-30 12:50:00
+ * @LastEditTime: 2020-03-22 15:30:11
  * @Description: 自动操作类的实现
  */
 
 #include "libpvz.h"
 #include "pvz_error.h"
 #include "pvz_global.h"
+
+// #define __CVZ_DEBUG__
 
 namespace pvz
 {
@@ -44,42 +46,31 @@ void FillIce::start(const std::vector<GRID> &lst)
 void FillIce::use_ice()
 {
 	WaitGameStart();
-	std::vector<ICE_SEED_MSG> ice_seed_msg_vec;
-	ICE_SEED_MSG ice_seed_msg;
 	SeedMemory ice_seed_memory;
-	int now_time = GameClock();
+	std::vector<int> ice_seed_index_vec;
 
 	// 初始化
 	for (int i = 0; i < 2; ++i)
 	{
+		int ice_index;
 		if (i == 0)
 		{
-			ice_seed_msg.index = GetSeedIndex(HBG_14);
+			ice_index = GetSeedIndex(HBG_14);
 		}
 		else
 		{
-			ice_seed_msg.index = GetSeedIndex(HBG_14, true);
+			ice_index = GetSeedIndex(HBG_14, true);
 		}
 
-		if (ice_seed_msg.index != -1)
+		if (ice_index != -1)
 		{
-			ice_seed_memory.setIndex(ice_seed_msg.index);
-			int ice_seed_cd = ice_seed_memory.CD();
-			if (ice_seed_cd == 0)
-			{
-				ice_seed_msg.recover_time = now_time;
-			}
-			else
-			{
-				ice_seed_msg.recover_time = now_time + ice_seed_memory.initialCD() - ice_seed_cd;
-			}
-			ice_seed_msg_vec.push_back(ice_seed_msg);
+			ice_seed_index_vec.push_back(ice_index);
 		}
 	}
 
 	coffee_seed_index = GetSeedIndex(KFD_35);
 	std::vector<int> ice_plant_index_vec;
-	decltype(ice_seed_msg_vec.begin()) ice_seed_msg_it;
+	std::vector<int> usable_iseed_index_vec;
 	decltype(ice_plant_index_vec.begin()) ice_plant_index_it;
 	decltype(grid_lst.begin()) grid_it;
 	bool is_get_indexs = false;
@@ -91,38 +82,49 @@ void FillIce::use_ice()
 		{
 			continue;
 		}
-
-		now_time = GameClock();
-
-		is_get_indexs = false;
 		grid_it = grid_lst.begin();
-		for (ice_seed_msg_it = ice_seed_msg_vec.begin();
-			 ice_seed_msg_it != ice_seed_msg_vec.end();
-			 ++ice_seed_msg_it)
+		usable_iseed_index_vec.clear();
+		for (const auto &index : ice_seed_index_vec)
 		{
-			if (ice_seed_msg_it->recover_time - 1 > now_time) // 精准种植
+			ice_seed_memory.setIndex(index);
+			if (5000 - 1 <= ice_seed_memory.CD() ||
+				ice_seed_memory.isUsable()) // 精准种植
 			{
-				continue;
+				usable_iseed_index_vec.push_back(index);
 			}
+		};
 
-			if (!is_get_indexs)
-			{
-				GetPlantIndexs(grid_lst, HBG_14, ice_plant_index_vec);
-				ice_plant_index_it = ice_plant_index_vec.begin();
-				is_get_indexs = true;
-			}
+#ifdef __CVZ_DEBUG__
+		system("cls");
+		printf("%d\n", usable_iseed_index_vec.size());
+#endif
+		if (usable_iseed_index_vec.size() == 0)
+		{
+			continue;
+		}
 
+		GetPlantIndexs(grid_lst, HBG_14, ice_plant_index_vec);
+
+#ifdef __CVZ_DEBUG__
+		for (const auto &each : ice_plant_index_vec)
+		{
+			printf("%d ", each);
+		}
+#endif
+		ice_plant_index_it = ice_plant_index_vec.begin();
+
+		for (auto &index : usable_iseed_index_vec)
+		{
 			for (; ice_plant_index_it != ice_plant_index_vec.end();
 				 ++grid_it, ++ice_plant_index_it)
 			{
 				if ((*ice_plant_index_it) == -1)
 				{
 					// 保证种上去
-					ice_seed_memory.setIndex(ice_seed_msg_it->index);
+					ice_seed_memory.setIndex(index);
 					while (!ice_seed_memory.isUsable())
 						;
-					Card(ice_seed_msg_it->index + 1, grid_it->row, grid_it->col);
-					ice_seed_msg_it->recover_time = GameClock() + 5000;
+					Card(index + 1, grid_it->row, grid_it->col);
 					++grid_it;
 					++ice_plant_index_it;
 					break;
@@ -281,7 +283,7 @@ void FixPlant::update_plant()
 	std::vector<int> plant_index_vec;
 	GRID need_plant_grid; //记录要使用植物的格子
 	int min_hp;			  //记录要使用植物的格子
-	bool is_seed_used;	//种子是否被使用
+	bool is_seed_used;	  //种子是否被使用
 	decltype(seed_index_vec.begin()) usable_seed_index_it;
 	decltype(plant_index_vec.begin()) plant_index_it;
 	decltype(grid_lst.begin()) grid_it;
@@ -610,6 +612,11 @@ void CollectItem::start_auto_collect() const
 
 	while (!is_stoped)
 	{
+
+#ifdef __CVZ_DEBUG__
+		printf("CollectItem\n");
+#endif
+
 		Sleep(time_interval);
 		if (is_paused || GamePaused() || GameUi() != 3)
 			continue;
@@ -656,6 +663,7 @@ void CollectItem::start_auto_collect() const
 					g_mu.unlock();
 					Sleep(time_interval);
 				}
+				int x = 0xFFFFFFF;
 			}
 		}
 	}

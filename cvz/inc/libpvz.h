@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \CppVsZombies\pvz_h\include\libpvz.h
  * @Date: 2019-12-21 15:19:54
- * @LastEditTime : 2020-01-29 18:59:35
+ * @LastEditTime: 2020-03-22 16:20:49
  * @Description: PvZ TAS Framework C++ vs. Zombies
  *               This framework references Python vs. Zombies
  *               @lmintlcx https://pvz.lmintlcx.com/scripts/pvz.py/
@@ -92,7 +92,7 @@ void WriteMemory(T value, Args... args)
 {
     std::initializer_list<uintptr_t> lst = {static_cast<uintptr_t>(args)...};
     uintptr_t buff = 0;
-    for (auto it = lst.begin(); it != lst.end(); it++)
+    for (auto it = lst.begin(); it != lst.end(); ++it)
         if (it != lst.end() - 1)
             ReadProcessMemory(g_handle, (const void *)(buff + *it), &buff, sizeof(buff), nullptr);
         else
@@ -252,13 +252,13 @@ public:
     //36：正在装填
     //37：准备就绪
     //38：正在发射
-    int status()
+    int state()
     {
         return ReadMemory<int>(offset + 0x3C + 0x14C * index);
     }
 
     //植物属性倒计时
-    int statusCountdown()
+    int stateCountdown()
     {
         return ReadMemory<int>(offset + 0x54 + 0x14C * index);
     }
@@ -333,7 +333,7 @@ public:
     }
 
     //返回僵尸状态
-    int status()
+    int state()
     {
         return ReadMemory<int>(offset + 0x28 + 0x15C * index);
     }
@@ -341,13 +341,13 @@ public:
     //判断僵尸是否死亡
     bool isDead()
     {
-        return status() == 1;
+        return state() == 1;
     }
 
     //判断巨人是否举锤
     bool isHammering()
     {
-        return status() == 70;
+        return state() == 70;
     }
 
     //判断僵尸是否隐形
@@ -369,7 +369,7 @@ public:
     }
 
     //僵尸属性倒计时
-    int statusCountdown()
+    int stateCountdown()
     {
         return ReadMemory<int>(offset + 0x68 + 0x15C * index);
     }
@@ -690,6 +690,26 @@ void GetZombieType(std::vector<int> &zombie_type_list_out_);
 //GetWaveZombieType(zombies_type, 1);-------得到第一波出怪类型
 //僵尸的出怪类型将会储存在数组 zombies_type 中
 void GetWaveZombieType(std::vector<int> &zombie_type_list_out_, int _wave_in_ = wave);
+
+//设置出怪 此函数不管填不填蹦极都会在 wave 10 20 刷蹦极！！！！！！！！！！！！
+//参数命名规则：前面两个字母与 PvZ Tools 出怪类型名称拼音首字母一致，后面接下划线和类型代号
+//例如 铁桶命名为 TT_4
+//使用示例：
+//SetZombies({CG_3, TT_4, BC_12, XC_15, QQ_16, FT_21, TL_22, BY_23, HY_32, TT_18});
+//设置出怪类型为：撑杆 铁桶 冰车 小丑 气球 扶梯 投篮 白眼 红眼 跳跳
+//SetZombies({TT_4, BC_12, BC_12});
+//设置出怪类型为：铁桶 冰车 并且两种僵尸的比例为 1：2
+void SetZombies(const std::vector<int> &zombie_type);
+
+//设置特定波出怪 此函数不管填不填蹦极都会在 wave 10 20 刷蹦极！！！！！！！！！！！！
+//参数命名规则：前面两个字母与 PvZ Tools 出怪类型名称拼音首字母一致，后面接下划线和类型代号
+//例如 铁桶命名为 TT_4
+//使用示例：
+//SetWaveZombies(1, {CG_3, TT_4, BC_12, XC_15, QQ_16, FT_21, TL_22, BY_23, HY_32, TT_18});
+//设置第一波出怪类型为：撑杆 铁桶 冰车 小丑 气球 扶梯 投篮 白眼 红眼 跳跳
+//SetWaveZombies(1, {TT_4, BC_12, BC_12});
+//设置第一波出怪类型为：铁桶 冰车 并且两种僵尸的比例为 1：2
+void SetWaveZombies(int _wave, const std::vector<int> &zombie_type);
 
 // ########################### time #####################
 
@@ -1214,11 +1234,6 @@ public:
 class FillIce : public BaseAutoThread
 {
 private:
-    struct ICE_SEED_MSG
-    {
-        int index;
-        int recover_time;
-    };
     std::vector<GRID> grid_lst;
     void use_ice();
     int coffee_seed_index;
@@ -1374,6 +1389,7 @@ class CollectItem : public BaseAutoThread
 {
 public:
     CollectItem();
+    ~CollectItem(){};
     void start();
 
 private:

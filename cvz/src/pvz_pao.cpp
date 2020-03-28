@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_pao.cpp
  * @Date: 2019-10-10 23:44:07
- * @LastEditTime : 2020-01-29 15:03:35
+ * @LastEditTime: 2020-03-07 22:00:51
  * @Description: 炮操作类的实现
  */
 
@@ -36,7 +36,7 @@ void PaoOperator::get_all_pao_message()
             pao_message.first.row = cannon.row() + 1;
             pao_message.first.col = cannon.col() + 1;
             pao_message.second.index = i;
-            cannon_status = cannon.status();
+            cannon_status = cannon.state();
 
             //计算炮恢复时间
             if (cannon_status == 37)
@@ -44,7 +44,7 @@ void PaoOperator::get_all_pao_message()
             else if (cannon_status == 38) //如果正在发射则认为该炮的
                 pao_message.second.recover_time = now_time + 3475;
             else //如果炮不能用，则恢复时间为现在时间 + 倒计时 + 125
-                pao_message.second.recover_time = now_time + cannon.statusCountdown() + 125;
+                pao_message.second.recover_time = now_time + cannon.stateCountdown() + 125;
 
             all_pao_list.insert(pao_message);
         }
@@ -132,7 +132,7 @@ void PaoOperator::add_pao_message(int row, int col)
 
     int now_time = GameClock();
     cannon.setIndex(new_pao.second.index);
-    cannon_status = cannon.status();
+    cannon_status = cannon.state();
     //计算炮恢复时间
     if (cannon_status == 37)
     {
@@ -144,7 +144,7 @@ void PaoOperator::add_pao_message(int row, int col)
     }
     else //如果炮不能用，则恢复时间为现在时间 + 倒计时 + 125
     {
-        new_pao.second.recover_time = now_time + cannon.statusCountdown() + 125;
+        new_pao.second.recover_time = now_time + cannon.stateCountdown() + 125;
     }
     new_pao.first.row = row;
     new_pao.first.col = col;
@@ -624,7 +624,7 @@ void PaoOperator::recoverPao(int row, float col)
 
     // 确保发炮
     PlantMemory cannon_memory(pao_list[temp_next_pao]->second.index);
-    while (cannon_memory.status() != 37)
+    while (cannon_memory.state() != 37)
         ;
     base_fire_pao(pao_list[temp_next_pao], GameClock(), row, col);
 }
@@ -701,7 +701,6 @@ void PaoOperator::roofPao(int row, float col)
     if (g_examine_level != CVZ_NO)
         pao_examine(pao_list[temp_next_pao], fire_time, row, col);
     pao_list[temp_next_pao]->second.recover_time = fire_time + 3475;
-
     RunningInThread(base_fire_roof_pao, pao_list[temp_next_pao], fire_time, row, col);
 }
 
@@ -833,7 +832,7 @@ void PaoOperator::rawRoofPao(int pao_row, int pao_col, int drop_row, float drop_
     int fire_time = 387 - get_roof_fly_time(pao_col, drop_col) + GameClock();
     if (g_examine_level != CVZ_NO)
         pao_examine(it, fire_time, drop_row, drop_col);
-
+    it->second.recover_time = fire_time + 3475;
     RunningInThread(base_fire_roof_pao, it, fire_time, drop_row, drop_col);
 }
 
@@ -859,6 +858,7 @@ void PaoOperator::rawRoofPao(const std::vector<RAW_PAO> &lst)
         {
             pao_examine(it, fire_time, rp.pao_row, rp.pao_col);
         }
+        it->second.recover_time = fire_time + 3475;
         roof_pao_list[num] = {it, rp.drop_row, rp.drop_col, fire_time};
     }
 
@@ -871,7 +871,7 @@ void PaoOperator::shovel_and_plant_pao(int row, int col, int move_col, PaoIterat
     PlantMemory shovel_pao(it->second.index);
 
     //等待炮使用
-    while (shovel_pao.status() != 38)
+    while (shovel_pao.state() != 38)
         Sleep(1);
 
     int time = GameClock();
@@ -945,7 +945,7 @@ void PaoOperator::tryFixPao()
         for (const auto pao_message : pao_list)
         {
             cannon.setIndex(pao_message->second.index);
-            if (cannon.status() == 37)
+            if (cannon.state() == 37)
             {
                 original_pao_message_list.push_back(pao_message);
             }
@@ -957,7 +957,7 @@ void PaoOperator::tryFixPao()
             for (const auto &pao_message : original_pao_message_list)
             {
                 cannon.setIndex(pao_message->second.index);
-                if (cannon.status() == 38)
+                if (cannon.state() == 38)
                 {
                     shovel_and_plant_pao(pao_message->first.row, pao_message->first.col, 0, pao_message, 0);
                     return;
@@ -1003,7 +1003,7 @@ void PaoOperator::tryRecoverPao(int row, float col)
 
     // 确保发炮
     PlantMemory cannon_memory((*min_time_it_it)->second.index);
-    while (cannon_memory.status() != 37)
+    while (cannon_memory.state() != 37)
         ;
 
     base_fire_pao(*min_time_it_it, GameClock(), row, col);

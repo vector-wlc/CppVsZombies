@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_preparation.cpp
  * @Date: 2019-10-10 23:47:03
- * @LastEditTime : 2020-01-27 15:29:27
+ * @LastEditTime: 2020-03-26 08:54:25
  * @Description: 程序进入 main 和退出 main 的一些准备
  */
 
@@ -29,25 +29,14 @@ CvZPreparation::CvZPreparation()
 
 CvZPreparation::~CvZPreparation()
 {
-    std::string str = "\t!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\
-    \t请注意：main 函数已退出，如有自己创建的对象，请检查是否使用 pvz::WaitGameEnd() 来保护这些对象\n\n\
-    \t此外即使没有创建对象，也推荐使用 pvz::WaitGameEnd() 来避免一些不可预料的运行异常\n\n\
-    \t!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n";
-#ifndef GBK
-    UTF8ToGBK(str);
-#endif
-    std::printf(str.c_str());
-
-    //当游戏未结束
-    while (GameUi() == 3)
-        Sleep(1000);
-
     //恢复游戏原来的内存信息
     pao_cvz.setResolveConflictType(PaoOperator::COLLECTION);
     StopMaidCheats();
 
     if (g_handle != nullptr)
+    {
         CloseHandle(g_handle);
+    }
 }
 
 //获得游戏窗口及进程

@@ -67,6 +67,13 @@
         "cctype": "cpp",
         "concepts": "cpp",
         "ctime": "cpp",
-        "queue": "cpp"
-    }
+        "queue": "cpp",
+        "clocale": "cpp",
+        "cstdarg": "cpp",
+        "cwctype": "cpp",
+        "numeric": "cpp",
+        "random": "cpp",
+        "*.tcc": "cpp",
+        "condition_variable": "cpp"
+    },
 }

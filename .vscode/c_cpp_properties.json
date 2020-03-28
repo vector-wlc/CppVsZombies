@@ -3,11 +3,12 @@
         {
             "name": "Windows",
             "includePath": [
-                "${workspaceRoot}/pvz_h/include"
+                "${workspaceRoot}/cvz/inc"
             ],
             "cStandard": "c11",
-            "cppStandard": "c++17"
+            "cppStandard": "c++17",
+            "configurationProvider": "vector-of-bool.cmake-tools"
         }
     ],
-    "version": 4   
+    "version": 4
 }

@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_memory.cpp
  * @Date: 2019-10-10 23:35:37
- * @LastEditTime : 2020-01-29 13:12:57
+ * @LastEditTime: 2020-03-26 21:10:52
  * @Description: 内存读取函数及相关类的实现
  */
 
@@ -313,7 +313,7 @@ bool IsExplode(int row, int col)
             int Zrow = zombie.row() + 1;
             float Zabsci = zombie.abscissa();
             //如果存在小丑且开盒
-            if (Ztype == 15 && zombie.status() == 16)
+            if (Ztype == 15 && zombie.state() == 16)
             {
                 if (Zrow == row - 1 && Zabsci < col * 80 + 42 && Zabsci > col * 80 - 162 ||
                     Zrow == row && Zabsci < col * 80 + 61 && Zabsci > col * 80 - 181 ||
@@ -393,6 +393,112 @@ void GetWaveZombieType(std::vector<int> &zombie_type_list, int _wave)
         {
             zombie_type_list.push_back(type);
         }
+    }
+}
+
+void UpdateZombiesPreview()
+{
+    int z_cnt_max = ZombieMemory::countMax();
+    uintptr_t z_offset = ReadMemory<uintptr_t>(g_mainobject + 0x90);
+    for (int index = 0; index < z_cnt_max; ++index)
+    {
+        WriteMemory<bool>(true, z_offset + 0xEC + index * 0x15C);
+        WriteMemory<int>(3, z_offset + 0x28 + index * 0x15C);
+    }
+    WriteMemory<bool>(false, g_mainobject + 0x15C, 0x35);
+}
+
+void SetZombies(const std::vector<int> &zombie_type)
+{
+    // 等待 "Surivial Endless" 字样消失
+    while (ReadMemory<bool>(g_mainobject + 0x140, 0x88))
+    {
+        Sleep(1);
+    }
+
+    std::vector<int> zombie_type_vec;
+
+    for (const auto &type : zombie_type)
+    {
+        // 做一些处理，出怪生成不应大量含有 旗帜 舞伴 雪橇小队 雪人 蹦极 小鬼
+        if (type != QZ_1 &&
+            type != BW_9 &&
+            type != XQ_13 &&
+            type != XR_19 &&
+            type != BJ_20 &&
+            type != XG_24)
+        {
+            zombie_type_vec.push_back(type);
+        }
+    }
+
+    std::array<uint32_t, 1000> zombie_list;
+    for (int index = 0; index < 1000; ++index)
+    {
+        zombie_list[index] = zombie_type_vec[index % zombie_type_vec.size()];
+    }
+
+    // 生成旗帜
+    for (auto index : {450, 950})
+    {
+        zombie_list[index] = QZ_1;
+    }
+
+    // 生成蹦极
+    for (auto index : {451, 452, 453, 454, 951, 952, 953, 954})
+    {
+        zombie_list[index] = BJ_20;
+    }
+
+    WriteMemory(zombie_list, g_mainobject + 0x6B4);
+
+    if (GameUi() == 2)
+    {
+        UpdateZombiesPreview();
+    }
+}
+
+void SetWaveZombies(int _wave, const std::vector<int> &zombie_type)
+{
+    while (ReadMemory<bool>(g_mainobject + 0x140, 0x88))
+    {
+        Sleep(1);
+    }
+
+    std::vector<int> zombie_type_vec;
+
+    for (const auto &type : zombie_type)
+    {
+        // 做一些处理，出怪生成不应大量含有 旗帜 舞伴 雪橇小队 雪人 蹦极 小鬼
+        if (type != QZ_1 &&
+            type != BW_9 &&
+            type != XQ_13 &&
+            type != XR_19 &&
+            type != BJ_20 &&
+            type != XG_24)
+        {
+            zombie_type_vec.push_back(type);
+        }
+    }
+
+    std::array<uint32_t, 50> zombie_list;
+    for (int index = 0; index < 50; ++index)
+    {
+        zombie_list[index] = zombie_type_vec[index % zombie_type_vec.size()];
+    }
+
+    WriteMemory(zombie_list, g_mainobject + 0x6B4 + (_wave - 1) * 50 * 4);
+
+    // 生成旗帜
+    for (auto index : {450, 950})
+    {
+        WriteMemory<uint32_t>(QZ_1, g_mainobject + 0x6B4 + index * 4);
+    }
+
+    // 生成蹦极
+    for (auto index : {451, 452, 453, 454, 951, 952, 953, 954})
+    {
+        WriteMemory<uint32_t>(BJ_20, g_mainobject + 0x6B4 + index * 4);
     }
 }
 } // namespace pvz

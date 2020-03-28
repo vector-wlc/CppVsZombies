@@ -3,7 +3,7 @@
  * @Author: Chu Wenlong
  * @FilePath: \pvz_h\source\pvz_card.cpp
  * @Date: 2019-10-10 23:37:48
- * @LastEditTime : 2020-01-27 16:27:59
+ * @LastEditTime: 2020-03-22 16:13:37
  * @Description: 卡片操作函数的实现
  */
 
@@ -80,43 +80,54 @@ void SelectCards(const std::vector<SEED_INDEX> &lst)
     if (g_examine_level == CVZ_IGNORE_TIME)
         return;
 
-    //在选卡界面进行选卡操作
-    if (GameUi() == 2)
+    while (ReadMemory<bool>(g_mainobject + 0x140, 0x88))
     {
-        DealWrongClickFromImitator();
-        Sleep(2000);
-        SeedMemory seed;
-        int slots_count = seed.slotsCount();
-        if (slots_count != lst.size())
+        Sleep(1);
+    }
+
+    if (GameUi() != 2)
+    {
+        return;
+    }
+
+    DealWrongClickFromImitator();
+
+    while (ReadMemory<int>(g_mainobject + 0x15C, 0x8) != 4250)
+    {
+        Sleep(1);
+    }
+
+    SeedMemory seed;
+    int slots_count = seed.slotsCount();
+    if (slots_count != lst.size())
+    {
+        PrintError("选择的卡片数目与卡槽位数目不符");
+    }
+    //开始选卡
+    while (1)
+    {
+        for (const auto &e : lst)
+            ChooseCard(e);
+        Sleep(500);
+        //检查Let's Rock的按钮是否亮起
+        if (ReadMemory<int>(0x6A9EC0, 0x774, 0x88, 0x1C) == 255)
+            break;
+        //没有全部选上重选
+        else
         {
-            PrintError("选择的卡片数目与卡槽位数目不符");
-        }
-        //开始选卡
-        while (1)
-        {
-            for (const auto &e : lst)
-                ChooseCard(e);
             Sleep(500);
-            //检查Let's Rock的按钮是否亮起
-            if (ReadMemory<int>(0x6A9EC0, 0x774, 0x88, 0x1C) == 255)
-                break;
-            //没有全部选上重选
-            else
+            for (int i = slots_count; i > 0; i--)
             {
-                Sleep(500);
-                for (int i = slots_count; i > 0; i--)
-                {
-                    RightClick(1, 1);
-                    LeftClick(70, 100);
-                    Sleep(100);
-                }
+                RightClick(1, 1);
+                LeftClick(70, 100);
+                Sleep(100);
             }
         }
-        LetsRock();
-
-        //等待游戏开始
-        WaitGameStart();
     }
+    LetsRock();
+
+    //等待游戏开始
+    WaitGameStart();
 }
 
 //选择多张卡片，根据卡片名称选择

@@ -6,11 +6,11 @@
         "${file}",
         "-std=c++1z",
         "-I",
-        "${workspaceRoot}/pvz_h/include",
+        "${workspaceRoot}/cvz/inc",
         "-l",
         "pvz",
         "-L",
-        "${workspaceRoot}/pvz_h/lib",
+        "${workspaceRoot}/output",
         "-o",
         "${workspaceRoot}/output/${fileBasenameNoExtension}.exe"
     ],
