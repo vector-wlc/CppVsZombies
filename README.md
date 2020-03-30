@@ -15,4 +15,6 @@ CvZ 是使用 C++ 语言为植物大战僵尸编写的键控框架，CvZ 中丰�
 在 [此处下载](https://pvz.lmintlcx.com/cvz/) 安装包，解压后使用 [VSCode](https://code.visualstudio.com/) 打开即可
 ## 致谢
 [lmintlcx/pvzscript](https://github.com/lmintlcx/pvzscripts)
+## 更新日志
+暂无
 </b>
